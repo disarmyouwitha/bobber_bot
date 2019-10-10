@@ -1,33 +1,57 @@
 import os
 import sys
 import cv2
+import glob
 import matplotlib.pyplot as plt
 from skimage.measure import compare_ssim
 
-# [SSIM]:
-# https://towardsdatascience.com/image-classification-using-ssim-34e549ec6e12
-# https://scikit-image.org/docs/dev/auto_examples/transform/plot_ssim.html
-# [Tensor Flow SSIM]:
-# https://www.tensorflow.org/api_docs/python/tf/image/ssim
-# [Motion Detection]:
-# http://www.robindavid.fr/opencv-tutorial/motion-detection-with-opencv.html
+# [Splash]:
+# square_bobber_64.png
+# square_bobber_70.png
 
-# 3. Load the two input images
-imageA = cv2.imread('square_bobber/square_bobber_3.png')
-#imageB = cv2.imread('square_bobber/square_bobber_7.png') # 3|7 close
-imageB = cv2.imread('square_bobber/square_bobber_6.png')  # 3|6 far
+file_mask = 'bobber_movie/square_bobber_{0}.png'
+path, dirs, files = next(os.walk('bobber_movie/'))
+_file_cnt = len(files)
 
-# 4. Convert the images to grayscale
-grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
-grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+# SSIM both 1 => 64 as well as 63 => 64 for 2 data points to guess with?
 
-# 5. Compute the Structural Similarity Index (SSIM) between the two
-#    images, ensuring that the difference image is returned
-(score, diff) = compare_ssim(grayA, grayB, full=True)
-diff = (diff * 255).astype("uint8")
+'''
+f = open('ssim_log_vs_first.txt','w+')
+for x in range(1, _file_cnt):
+    imageA = cv2.imread(file_mask.format(1))
+    imageB = cv2.imread(file_mask.format(x))
+    grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
+    grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+    (score, diff) = compare_ssim(grayA, grayB, full=True)
+    diff = (diff * 255).astype("uint8")
+    ssim_score = 'SSIM: {0} | img1: {1} / img2: {2}'.format(score, x, x+1)
+    f.write(ssim_score+'\n')
+    #print ssim_score
+f.close()
+'''
 
-# 6. You can print only the score if you want
-print("SSIM: {}".format(score))
+'''
+f = open('ssim_log_stepwise.txt','w+')
+for x in range(1, _file_cnt, 2):
+    if x+1 < _file_cnt:
+        imageA = cv2.imread(file_mask.format(x))
+        imageB = cv2.imread(file_mask.format(x+1))
+        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
+        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+        (score, diff) = compare_ssim(grayA, grayB, full=True)
+        diff = (diff * 255).astype("uint8")
+        ssim_score = 'SSIM: {0} | img1: {1} / img2: {2}'.format(score, x, x+1)
+        f.write(ssim_score+'\n')
+        #print ssim_score
+f.close()
+'''
+
+
+
+
+
+
+
 
 '''
 # https://www.pyimagesearch.com/2017/06/19/image-difference-with-opencv-and-python/

@@ -436,6 +436,9 @@ class mouse_listener(PyMouseEvent):
 
         return 0
 
+    # [Splash]:
+    # square_bobber_64.png
+    # square_bobber_70.png
     def track_bobber(self, _bobber_coords):
         while self._timer_elapsed < 30:
             # [Take screenshot of square around bobber for splash detection bounds]:
@@ -555,7 +558,6 @@ class mouse_listener(PyMouseEvent):
         '''
 
 
-#[-]: bobber tracking - take pics for 30sec every .5sec
 #[1]: gaugeWater test / SSIM test / motion detection test
 #[2]: treshold /detect splash
 #[3]: Threaded calls with Twisted (rather than sleep-based)
