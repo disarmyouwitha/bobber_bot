@@ -13,40 +13,30 @@ file_mask = 'bobber_movie/square_bobber_{0}.png'
 path, dirs, files = next(os.walk('bobber_movie/'))
 _file_cnt = len(files)
 
-# SSIM both 1 => 64 as well as 63 => 64 for 2 data points to guess with?
-
-'''
-f = open('ssim_log_vs_first.txt','w+')
+f = open('ssim_log_combined.txt','w+')
 for x in range(1, _file_cnt):
-    imageA = cv2.imread(file_mask.format(1))
-    imageB = cv2.imread(file_mask.format(x))
-    grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
-    grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
-    (score, diff) = compare_ssim(grayA, grayB, full=True)
-    diff = (diff * 255).astype("uint8")
-    ssim_score = 'SSIM: {0} | img1: {1} / img2: {2}'.format(score, x, x+1)
-    f.write(ssim_score+'\n')
-    #print ssim_score
-f.close()
-'''
-
-'''
-f = open('ssim_log_stepwise.txt','w+')
-for x in range(1, _file_cnt, 2):
     if x+1 < _file_cnt:
+        # [from_first]:
+        imageA = cv2.imread(file_mask.format(1))
+        imageB = cv2.imread(file_mask.format(x))
+        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
+        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+        (score, diff) = compare_ssim(grayA, grayB, full=True)
+        diff = (diff * 255).astype("uint8")
+        ssim_score_1 = 'SSIM: {:2.5f} | img1: {:3d} / img2: {:3d}'.format(score, 1, x)
+
+        # [stepwise]:
         imageA = cv2.imread(file_mask.format(x))
         imageB = cv2.imread(file_mask.format(x+1))
         grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
         (score, diff) = compare_ssim(grayA, grayB, full=True)
         diff = (diff * 255).astype("uint8")
-        ssim_score = 'SSIM: {0} | img1: {1} / img2: {2}'.format(score, x, x+1)
-        f.write(ssim_score+'\n')
-        #print ssim_score
+        ssim_score_2 = 'SSIM: {:2.5f} | img1: {:3d} / img2: {:3d}'.format(score, x, x+1)
+
+        f.write(ssim_score_1+'\n')
+        f.write(ssim_score_2+'\n\n')
 f.close()
-'''
-
-
 
 
 
