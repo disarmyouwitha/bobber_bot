@@ -308,6 +308,8 @@ class mouse_listener(PyMouseEvent):
     _timer_elapsed = 30
     _bobber_reset = False
     _check_cnt = 0 # Disabled right now
+    _first_bobber_square = None
+    _last_bobber_square = None
 
     # [Screen Pixel]:
     _cnt = 0
@@ -440,6 +442,30 @@ class mouse_listener(PyMouseEvent):
     # square_bobber_64.png
     # square_bobber_70.png
     def track_bobber(self, _bobber_coords):
+        # [Take screenshot of square around bobber for splash detection bounds]:
+        self.sp.capture()
+        nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
+
+        # [SSIM vs last bobber]:
+        if _first_bobber_square is None:
+            self._first_bobber_square = nemo
+            self._last_bobber_square = nemo
+            imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
+        else:
+            _bobber_ssim = self.bobber_ssim(nemo)
+
+            # [SPLASH DETECTED]:
+            #if _bobber_ssim < .73: # stepwise
+            if _bobber_ssim < .7: # vs_first
+                pyautogui.rightClick(x=None, y=None)
+                #self.cast_pole('Found Bobber')
+                sys.exit(1)
+
+            # [Make current bobber, last bobber]:
+            self._last_bobber_square = nemo
+
+        '''
+        # [Track bobber for 30 seconds, taking pictures]:
         while self._timer_elapsed < 30:
             # [Take screenshot of square around bobber for splash detection bounds]:
             self.sp.capture()
@@ -449,17 +475,59 @@ class mouse_listener(PyMouseEvent):
             self._timer_elapsed = (time.time() - self._timer_start)
 
         # [Right click / Recast after 30 second]:
-        #pyautogui.rightClick(x=None, y=None)
-        #self.cast_pole('Found Bobber')
+        pyautogui.rightClick(x=None, y=None)
+        self.cast_pole('Found Bobber')
         sys.exit(1)
+        '''
 
 
+    #vs_first: USUALLY above .75  | ALMOST ALWAYS above .7
+    #stepwise: USUALLY above .8   | ALMOST ALWAYS above .75
+    #_splash_: vs_first BELOW: .7 | stepwise BELOW: .75
+    def bobber_ssim(self, nemo):
+        # [from_first]:
+        imageA = cv2.imread(self._first_bobber_square)
+        imageB = cv2.imread(nemo)
+        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
+        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+        (score, diff) = compare_ssim(grayA, grayB, full=True)
+        #diff = (diff * 255).astype("uint8")
+        _ssim_score_vs_first = score
+
+        # [stepwise]:
+        imageA = cv2.imread(self._last_bobber_square)
+        imageB = cv2.imread(nemo)
+        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
+        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
+        (score, diff) = compare_ssim(grayA, grayB, full=True)
+        #diff = (diff * 255).astype("uint8")
+        _ssim_score_stepwise = score
+
+        return _ssim_score_vs_first
+        #return _ssim_score_stepwise
+        #return (_ssim_score_vs_first+_ssim_score_stepwise)/2 # Is Average SSIM useful? xD
+
+
+    # [Write tests like sssim.py to get blue_sum/average for all square_bobber grabs!]:
     # https://github.com/KevinTyrrell/FishingBot/blob/1b736a7949969b8486dd79f6e3dbc327ae01e8f4/src/model/singleton/Angler.java
     def gauge_water(self):
-        print '[woomy!]'
-        nemo = cv2.imread('square_bobber/square_bobber_1.png')
+        nemo = cv2.imread('bobber_movie/square_bobber_1.png')
+        #blue_sum: 3192227
+        #0.01253043721514792
+
+        #nemo = cv2.imread('bobber_movie/square_bobber_63.png')
+        #blue_sum: 3187092
+        #0.0125506260879824
+
+        #nemo = cv2.imread('bobber_movie/square_bobber_64.png')
+        #blue_sum: 3013206
+        #0.013274897235701775
+
+        #nemo = cv2.imread('bobber_movie/square_bobber_67.png')
+        #blue_sum: 3234105
+        #0.012368182232797018
+
         total_pixels = nemo.shape[0]*nemo.shape[1]
-        print 'total_pixels: {0}'.format(total_pixels)
 
         nemo[:, :, 0] = 0     # Zero out contribution from red
         nemo[:, :, 1] = 0     # Zero out contribution from green
@@ -471,11 +539,7 @@ class mouse_listener(PyMouseEvent):
         blue_channel = nemo[:, :, 2]
         blue_sum = np.sum(blue_channel)
         print 'blue_sum: {0}'.format(blue_sum)
-        # 2,852,153
-
-        print blue_sum/total_pixels
-
-        # Take average over time!
+        print total_pixels/blue_sum
 
         '''
         private boolean reelIn()
@@ -565,7 +629,7 @@ class mouse_listener(PyMouseEvent):
 if __name__ == '__main__':
     sp = ScreenPixel()
     c = mouse_listener(sp)
-    c.run()
-    print '[fin.]'
+    #c.run()
+    #print '[fin.]'
 
-    #c.gauge_water()
+    c.gauge_water()

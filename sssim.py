@@ -24,7 +24,7 @@ for x in range(2, _file_cnt):
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
         (score, diff) = compare_ssim(grayA, grayB, full=True)
         diff = (diff * 255).astype("uint8")
-        ssim_score_1 = 'SSIM: {:2.5f} | img1: {:3d} / img2: {:3d}'.format(score, 1, x)
+        ssim_score_1 = 'SSIMa: {:2.5f} | img1: {:3d} / img2: {:3d}'.format(score, 1, x)
 
         # [stepwise]:
         imageA = cv2.imread(file_mask.format(x-1))
@@ -33,7 +33,7 @@ for x in range(2, _file_cnt):
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
         (score, diff) = compare_ssim(grayA, grayB, full=True)
         diff = (diff * 255).astype("uint8")
-        ssim_score_2 = 'SSIM: {:2.5f} | img1: {:3d} / img2: {:3d}'.format(score, x-1, x)
+        ssim_score_2 = 'SSIMb: {:2.5f} | img1: {:3d} / img2: {:3d}'.format(score, x-1, x)
 
         f.write(ssim_score_1+'\n')
         f.write(ssim_score_2+'\n\n')
