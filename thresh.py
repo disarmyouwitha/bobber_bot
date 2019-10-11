@@ -313,6 +313,7 @@ class mouse_listener(PyMouseEvent):
     def cast_pole(self, note=''):
         self._fishing = False
         self._timer_elapsed = 0
+        self._first_bobber_square = None
 
         print '[casting_pole: {0}]'.format(note)
         self._timer_start = time.time()
@@ -382,10 +383,10 @@ class mouse_listener(PyMouseEvent):
                         self._check_cnt=0
                         self._fishing=False
                         return _bobber_loc
-                    #else:
-                    #    if self._check_cnt > 25:
-                    #        self.cast_pole('25_check_cnt')
-                    #    self._check_cnt+=1
+                    else:
+                        if self._check_cnt > 10:
+                            self.cast_pole('10_check_cnt')
+                        self._check_cnt+=1
 
                     # [Check to see if we are past 30 second timer]:
                     if self._timer_elapsed >= 30:
@@ -441,20 +442,15 @@ class mouse_listener(PyMouseEvent):
             if self._first_bobber_square is None:
                 self._first_bobber_square = nemo
                 self._last_bobber_square = nemo
-                imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
+                #imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
                 self._cnt+=1
             else:
-                _bobber_ssim = self.bobber_ssim(nemo)
-
-                # [SPLASH DETECTED]:
-                #if _bobber_ssim < .73: # stepwise
-                if _bobber_ssim < .7: # vs_first
+                if self.bobber_ssim(nemo, .64):
+                #if self.gauge_water(nemo, .0165):
                     print '[SPLASH DETECTED!]'
                     pyautogui.rightClick(x=None, y=None)
                     _bobber_found = True
-                    self._first_bobber_square = None
                     self.cast_pole('Found Bobber')
-                    #sys.exit(1)
 
                 # [Make current bobber, last bobber]:
                 self._last_bobber_square = nemo
@@ -465,7 +461,7 @@ class mouse_listener(PyMouseEvent):
     #vs_first: USUALLY above .75  | ALMOST ALWAYS above .7
     #stepwise: USUALLY above .8   | ALMOST ALWAYS above .75
     #_splash_: vs_first BELOW: .7 | stepwise BELOW: .75
-    def bobber_ssim(self, nemo):
+    def bobber_ssim(self, nemo, threshold):
         # [from_first]:
         imageA = self._first_bobber_square
         imageB = nemo
@@ -474,6 +470,8 @@ class mouse_listener(PyMouseEvent):
         (score, diff) = compare_ssim(grayA, grayB, full=True)
         #diff = (diff * 255).astype("uint8")
         _ssim_score_vs_first = score
+        ssim_score_1 = '_ssim_score_vs_first: {:2.5f}'.format(_ssim_score_vs_first)
+        #print ssim_score_1
 
         # [stepwise]:
         imageA = self._last_bobber_square
@@ -483,39 +481,30 @@ class mouse_listener(PyMouseEvent):
         (score, diff) = compare_ssim(grayA, grayB, full=True)
         #diff = (diff * 255).astype("uint8")
         _ssim_score_stepwise = score
+        ssim_score_2 = '_ssim_score_stepwise: {:2.5f}'.format(_ssim_score_stepwise)
+        #print ssim_score_2
 
-        imsave('square_bobber_{0}.png'.format(self._cnt), self._last_bobber_square)
-        self._cnt+=1
-        imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
-        self._cnt+=1
+        # [Splash Cam]:
+        if _ssim_score_vs_first < threshold:
+            print ssim_score_1
+            print ssim_score_2
+            imsave('square_bobber_SPLASH_{0}_1.png'.format(self._cnt), self._last_bobber_square)
+            imsave('square_bobber_SPLASH_{0}_2.png'.format(self._cnt), nemo)
+            self._cnt+=1
 
-        #print '_ssim_score_vs_first: {0}'.format(_ssim_score_vs_first)
-        #print '_ssim_score_stepwise: {0}'.format(_ssim_score_stepwise)
+        with open('bobber_bot.log', 'a') as f:
+            if _ssim_score_vs_first < threshold:
+                f.write('[SPLASH DETECTED]\n')
 
-        return _ssim_score_vs_first
-        #return _ssim_score_stepwise
+            f.write(ssim_score_1+'\n')
+            f.write(ssim_score_2+'\n\n')
+
+        return _ssim_score_vs_first < threshold
         #return (_ssim_score_vs_first+_ssim_score_stepwise)/2 # Is Average SSIM useful? xD
 
 
-    # [Write tests like sssim.py to get blue_sum/average for all square_bobber grabs!]:
     # https://github.com/KevinTyrrell/FishingBot/blob/1b736a7949969b8486dd79f6e3dbc327ae01e8f4/src/model/singleton/Angler.java
-    def gauge_water(self):
-        nemo = cv2.imread('bobber_movie/square_bobber_1.png')
-        #blue_sum: 3192227
-        #0.01253043721514792
-
-        #nemo = cv2.imread('bobber_movie/square_bobber_63.png')
-        #blue_sum: 3187092
-        #0.0125506260879824
-
-        #nemo = cv2.imread('bobber_movie/square_bobber_64.png')
-        #blue_sum: 3013206
-        #0.013274897235701775
-
-        #nemo = cv2.imread('bobber_movie/square_bobber_67.png')
-        #blue_sum: 3234105
-        #0.012368182232797018
-
+    def gauge_water(self, nemo, threshold):
         total_pixels = nemo.shape[0]*nemo.shape[1]
 
         nemo[:, :, 0] = 0     # Zero out contribution from red
@@ -527,99 +516,26 @@ class mouse_listener(PyMouseEvent):
         # [Isolate Blue channel and sum total]:
         blue_channel = nemo[:, :, 2]
         blue_sum = np.sum(blue_channel)
-        print 'blue_sum: {0}'.format(blue_sum)
-        print total_pixels/blue_sum
+        blue_str = 'blue_sum: {0}'.format(blue_sum)
+        blue_percent = total_pixels/blue_sum
 
-        '''
-        private boolean reelIn()
-        {
-            assert isCalibrated();
-            final PointerInfo mouse = MouseInfo.getPointerInfo();
+        with open('bobber_bot.log', 'a') as f:
+            if blue_percent > threshold:
+                f.write('[SPLASH DETECTED]\n')
 
-            /* Location of where the bobber was discovered. */
-            final Point bobberLoc = new Point(mouse.getLocation().x, mouse.getLocation().y);
+            #print blue_str
+            #print '{:2.5f}'.format(blue_percent)
+            f.write(blue_str+'\n')
+            f.write('{:2.5f}\n\n'.format(blue_percent))
 
-            /* Remember how much blue there was at the start of the reeling. */
-            final double controlBlue = gaugeWater(bobberLoc);
-
-            /* Continue searching until the cast ends or user stops fishing. */
-            while (!isInterrupted())
-            {
-                /* Sleep to prevent max-CPU usage. */
-                AlarmClock.nap(TimeUnit.MILLISECONDS, 25);
-            
-                /* Percentage between 0 and 1 of change between the control and experimental. */
-                final double percentDiff = Math.abs(gaugeWater(bobberLoc) - controlBlue) / controlBlue;
-                final double IDEAL_THRESHOLD = 0.08f;
-            
-                if (percentDiff >= IDEAL_THRESHOLD / 2) 
-                {
-                    Controller.INSTANCE.getDebugConversation().whisper(String.format(DEBUGF_SPLASH_DETECTION.get(), percentDiff * 100)); 
-                }
-
-                /* Difference is substantial -- bobber might have splashed. */
-                if (percentDiff >= IDEAL_THRESHOLD)
-                {
-                    final Robot bot = comp.getBot();
-                    bot.mouseMove(mouse.getLocation().x, mouse.getLocation().y);
-                    bot.keyPress(KeyEvent.VK_SHIFT);
-                    bot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
-                    AlarmClock.nap(TimeUnit.MILLISECONDS, 25);
-                    bot.mouseRelease(InputEvent.BUTTON3_DOWN_MASK);
-                    bot.keyRelease(KeyEvent.VK_SHIFT);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /**
-        * Searches around the cursor and identifies the level of `BLUE` nearby.
-        * Taking this reading multiple times allows for easier pixel change detection.
-        * @return - Average amount of blue in each pixel near the cursor.
-        */
-        private double gaugeWater(final Point pt)
-        {
-            assert pt != null;
-            assert pt.getX() <= comp.getScreenWidth();
-            assert pt.getY() <= comp.getScreenHeight();
-
-            final BufferedImage img = comp.screenshot();
-            final int scaledRadius = Math.min(comp.getScreenWidth(), comp.getScreenHeight()) / 2 / 10;
-
-            /* Region of the screen to search for splash detection. */
-            final Region searchArea = new Region(new Point(
-                    Math.max(pt.getX() - scaledRadius, 0), Math.max(pt.getY() - scaledRadius, 0)),
-                    Math.min(scaledRadius * 2, comp.getScreenWidth()), Math.min(scaledRadius * 2, comp.getScreenHeight()));
-
-            /* Average the amount of blue in a region around the mouse. */
-            final OptionalDouble val = searchArea.stream()
-                    .mapToInt(p -> Computer.parseByteColor(img.getRGB(p.getX(), p.getY())).getBlue())
-                    .average();
-            assert val.isPresent();
-            return val.getAsDouble();
-        }
-        '''
-
-        '''
-        import cv2
-        import numpy
-        myimg = cv2.imread('image.jpg')
-        avg_color_per_row = numpy.average(myimg, axis=0)
-        avg_color = numpy.average(avg_color_per_row, axis=0)
-        print(avg_color)
-        '''
+        return blue_percent > threshold
 
 
-#[0]: Saving configs issue(?)
-#[1]: gaugeWater test / SSIM test / motion detection test
-#[2]: treshold /detect splash
-#[3]: Threaded calls with Twisted (rather than sleep-based)
-#[0]: keyboard interrupt: reset bot/cast_pole
+#[0]: gaugeWater test / SSIM test / motion detection test
+#[1]: Threaded calls with Twisted (rather than sleep-based)
+#[2]: keyboard interrupt: reset bot/cast_pole
 if __name__ == '__main__':
     sp = ScreenPixel()
     c = mouse_listener(sp)
     c.run()
     print '[fin.]'
-
-    #c.gauge_water()
