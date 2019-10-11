@@ -287,6 +287,8 @@ class mouse_listener(PyMouseEvent):
     _timer_start = None
     _timer_elapsed = 30
     _bobber_reset = False
+    _bauble_start = None
+    _bauble_elapsed = 600
 
     # [Screen Pixel]:
     _cnt = 0
@@ -303,6 +305,8 @@ class mouse_listener(PyMouseEvent):
         self._timer_elapsed = 0
         self._first_bobber_square = None
 
+        self.bauble_check() # Apply bauble
+
         print '[casting_pole: {0}]'.format(note)
         self._timer_start = time.time()
 
@@ -311,6 +315,16 @@ class mouse_listener(PyMouseEvent):
             time.sleep(2) # Wait so that we don't try and find old bobber as it fades
             self._bobber_reset=True
             self._fishing=True
+
+    def bauble_check(self):
+        if self._bauble_elapsed >= 600: # 10min
+            print '[casting_bauble]'
+            pyautogui.typewrite('9') # bauble skill on actionbar
+            pyautogui.typewrite('7') # bauble skill on actionbar
+            time.sleep(10) # sleep while casting bauble~
+            self._bauble_elapsed = 0
+            self._bauble_start = time.time()
+        self._bauble_elapsed = (time.time() - self._bauble_start)
 
     def click(self, x, y, button, press):
         int_x = int(x)
