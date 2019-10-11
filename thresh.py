@@ -2,30 +2,18 @@ import os
 import sys
 import cv2
 import time
+import pyaudio
 import pyautogui
 import contextlib
 import scipy.misc #do I need to import the whole module, or just imsave below?
 import numpy as np
 from scipy.misc import imsave
-import matplotlib.pyplot as plt # probably don't need this once finished
 from playsound import playsound
 import Quartz.CoreGraphics as CG
 from pymouse import PyMouseEvent
-from skimage.measure import compare_ssim
 
 pyautogui.PAUSE = 0#2.5
 pyautogui.FAILSAFE = True
-
-
-# [SSIM]:
-# https://towardsdatascience.com/image-classification-using-ssim-34e549ec6e12
-# https://scikit-image.org/docs/dev/auto_examples/transform/plot_ssim.html
-# [Tensor Flow SSIM]:
-# https://www.tensorflow.org/api_docs/python/tf/image/ssim
-# [Motion Detection]:
-# http://www.robindavid.fr/opencv-tutorial/motion-detection-with-opencv.html
-# [Average/Dominant Color]:
-# https://zeevgilovitz.com/detecting-dominant-colours-in-python
 
 
 class ScreenPixel(object):
@@ -283,6 +271,7 @@ class ScreenPixel(object):
 
         return nemo_masked
 
+
 @contextlib.contextmanager
 def timer(msg):
     start = time.time()
@@ -293,17 +282,16 @@ def timer(msg):
 
 class mouse_listener(PyMouseEvent):
     # [MouseListener Globals]:
+    _check_cnt = 0
     _fishing = False
     _timer_start = None
     _timer_elapsed = 30
     _bobber_reset = False
-    _check_cnt = 0 # Disabled right now
-    _first_bobber_square = None
-    _last_bobber_square = None
 
     # [Screen Pixel]:
     _cnt = 0
     sp = None
+    p = pyaudio.PyAudio()
 
     def __init__(self, screen_pixel):
         PyMouseEvent.__init__(self) 
@@ -349,7 +337,8 @@ class mouse_listener(PyMouseEvent):
                     # [Try to locate the bobber]:
                     _bobber_coords = self.find_bobber()
                     if _bobber_coords != 0:
-                        self.track_bobber(_bobber_coords)
+                        #self.track_bobber(_bobber_coords)
+                        self.listen_splash()
 
                 except pyautogui.FailSafeException:
                     self._bobber_reset=True
@@ -385,8 +374,10 @@ class mouse_listener(PyMouseEvent):
                         return _bobber_loc
                     else:
                         if self._check_cnt > 10:
-                            self.cast_pole('10_check_cnt')
-                        self._check_cnt+=1
+                            self._bobber_reset = True
+                            self._check_cnt = 0
+                        else:
+                            self._check_cnt+=1
 
                     # [Check to see if we are past 30 second timer]:
                     if self._timer_elapsed >= 30:
@@ -429,111 +420,37 @@ class mouse_listener(PyMouseEvent):
 
         return 0
 
-    # [Splash]:
     def track_bobber(self, _bobber_coords):
         # [Track bobber for 30 seconds, taking pictures]:
-        _bobber_found = False
-        while self._timer_elapsed < 30 and _bobber_found==False:
-            # [Take screenshot of square around bobber for splash detection bounds]:
+        while self._timer_elapsed < 30:
             self.sp.capture()
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
+            self._timer_elapsed = (time.time() - self._timer_start)
 
-            # [SSIM vs last bobber]:
-            if self._first_bobber_square is None:
-                self._first_bobber_square = nemo
-                self._last_bobber_square = nemo
-                #imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
-                self._cnt+=1
-            else:
-                if self.bobber_ssim(nemo, .64):
-                #if self.gauge_water(nemo, .0165):
-                    print '[SPLASH DETECTED!]'
-                    pyautogui.rightClick(x=None, y=None)
-                    _bobber_found = True
-                    self.cast_pole('Found Bobber')
+    def listen_splash(self, threshold=1500):
+        CHUNK = 2**11
+        RATE = 44100
+        stream = self.p.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
-                # [Make current bobber, last bobber]:
-                self._last_bobber_square = nemo
+        _splash_detected = False
+        while self._timer_elapsed < 30 and _splash_detected==False:
+            data = np.fromstring(stream.read(CHUNK),dtype=np.int16)
+            peak=np.average(np.abs(data))*2
+            bars="#"*int(50*peak/2**16)
+            if peak > 1000:
+                print("%05d %s"%(peak,bars))
+
+            if peak > threshold:
+                print '[SPLASH DETECTED!]'
+                pyautogui.rightClick(x=None, y=None)
+                _splash_detected = True
+                self.cast_pole('Found Bobber')
 
             self._timer_elapsed = (time.time() - self._timer_start)
 
-
-    #vs_first: USUALLY above .75  | ALMOST ALWAYS above .7
-    #stepwise: USUALLY above .8   | ALMOST ALWAYS above .75
-    #_splash_: vs_first BELOW: .7 | stepwise BELOW: .75
-    def bobber_ssim(self, nemo, threshold):
-        # [from_first]:
-        imageA = self._first_bobber_square
-        imageB = nemo
-        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
-        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
-        (score, diff) = compare_ssim(grayA, grayB, full=True)
-        #diff = (diff * 255).astype("uint8")
-        _ssim_score_vs_first = score
-        ssim_score_1 = '_ssim_score_vs_first: {:2.5f}'.format(_ssim_score_vs_first)
-        #print ssim_score_1
-
-        # [stepwise]:
-        imageA = self._last_bobber_square
-        imageB = nemo
-        grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
-        grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
-        (score, diff) = compare_ssim(grayA, grayB, full=True)
-        #diff = (diff * 255).astype("uint8")
-        _ssim_score_stepwise = score
-        ssim_score_2 = '_ssim_score_stepwise: {:2.5f}'.format(_ssim_score_stepwise)
-        #print ssim_score_2
-
-        # [Splash Cam]:
-        if _ssim_score_vs_first < threshold:
-            print ssim_score_1
-            print ssim_score_2
-            imsave('square_bobber_SPLASH_{0}_1.png'.format(self._cnt), self._last_bobber_square)
-            imsave('square_bobber_SPLASH_{0}_2.png'.format(self._cnt), nemo)
-            self._cnt+=1
-
-        with open('bobber_bot.log', 'a') as f:
-            if _ssim_score_vs_first < threshold:
-                f.write('[SPLASH DETECTED]\n')
-
-            f.write(ssim_score_1+'\n')
-            f.write(ssim_score_2+'\n\n')
-
-        return _ssim_score_vs_first < threshold
-        #return (_ssim_score_vs_first+_ssim_score_stepwise)/2 # Is Average SSIM useful? xD
+        return 0
 
 
-    # https://github.com/KevinTyrrell/FishingBot/blob/1b736a7949969b8486dd79f6e3dbc327ae01e8f4/src/model/singleton/Angler.java
-    def gauge_water(self, nemo, threshold):
-        total_pixels = nemo.shape[0]*nemo.shape[1]
-
-        nemo[:, :, 0] = 0     # Zero out contribution from red
-        nemo[:, :, 1] = 0     # Zero out contribution from green
-        #nemo[:, :, 2] = 0    # Zero out contribution from blue
-        #plt.imshow(nemo)
-        #plt.show()
-
-        # [Isolate Blue channel and sum total]:
-        blue_channel = nemo[:, :, 2]
-        blue_sum = np.sum(blue_channel)
-        blue_str = 'blue_sum: {0}'.format(blue_sum)
-        blue_percent = total_pixels/blue_sum
-
-        with open('bobber_bot.log', 'a') as f:
-            if blue_percent > threshold:
-                f.write('[SPLASH DETECTED]\n')
-
-            #print blue_str
-            #print '{:2.5f}'.format(blue_percent)
-            f.write(blue_str+'\n')
-            f.write('{:2.5f}\n\n'.format(blue_percent))
-
-        return blue_percent > threshold
-
-
-#[0]: gaugeWater test / SSIM test / motion detection test
-#[1]: Threaded calls with Twisted (rather than sleep-based)
-#[2]: keyboard interrupt: reset bot/cast_pole
 if __name__ == '__main__':
     sp = ScreenPixel()
     c = mouse_listener(sp)
