@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt # probably don't need this once finished
 from playsound import playsound
 import Quartz.CoreGraphics as CG
 from pymouse import PyMouseEvent
+from skimage.measure import compare_ssim
 
 pyautogui.PAUSE = 0#2.5
 pyautogui.FAILSAFE = True
@@ -156,11 +157,6 @@ class ScreenPixel(object):
                 nemo = self.save_square(top=725,left=1300,square_width=100,mod=2,center=False)
                 lower_hsv = self.tooltip_lower_hsv
                 upper_hsv = self.tooltip_upper_hsv
-            elif screen=='splash_square':
-                #nemo = self.save_square(top=200,left=100,square_width=300)
-                nemo = cv2.imread('screen_shots/calibrate_OG_splash_square0_1.png')
-                lower_hsv = self.splash_lower_hsv
-                upper_hsv = self.splash_upper_hsv
 
             # [Median Blur]:
             # [Convert BGR to HSV]:
@@ -228,6 +224,12 @@ class ScreenPixel(object):
                 _calibrate_good = raw_input('[Calibration Good? Ready? (y/n)]: ')
                 _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
 
+            if _calibrate_good == True:
+                # [Save Calibration image]: (Great for setup debug)
+                mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+                imsave('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
+                self._thresh_cnt+=1
+
             if _calibrate_good == True and _use_calibrate_config == False:
                 # [Delete old config file]:
                 if os.path.isfile(config_filename):
@@ -245,25 +247,17 @@ class ScreenPixel(object):
                     f.write('{0}\n'.format(us)) #upper_saturation
                     f.write('{0}'.format(uv))   #upper_value
 
-            # [Update Globals]:
-            if _calibrate_good == True:
-                if screen=='bobber':
-                    self.bobber_lower_hsv = lower_hsv
-                    self.bobber_upper_hsv = upper_hsv
-                elif screen=='tooltip_square':
-                    self.tooltip_lower_hsv = lower_hsv
-                    self.tooltip_upper_hsv = upper_hsv
-                elif screen=='splash_square':
-                    self.splash_lower_hsv = lower_hsv
-                    self.splash_upper_hsv = upper_hsv
-
-                # [Save Calibration image]: (Great for setup debug)
-                mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-                imsave('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
-                self._thresh_cnt+=1
-            else:
-                # [Bad calibration, try again]:
-                self.calibrate_image(screen)
+        # [Update Globals]:
+        if _calibrate_good == True:
+            if screen=='bobber':
+                self.bobber_lower_hsv = lower_hsv
+                self.bobber_upper_hsv = upper_hsv
+            elif screen=='tooltip_square':
+                self.tooltip_lower_hsv = lower_hsv
+                self.tooltip_upper_hsv = upper_hsv
+        else:
+            # [Bad calibration, try again]:
+            self.calibrate_image(screen)
 
     def thresh_image(self, screen='bobber'):
         self.capture()
@@ -276,10 +270,6 @@ class ScreenPixel(object):
             nemo = self.save_square(top=725,left=1300,square_width=100)
             lower_hsv = self.tooltip_lower_hsv
             upper_hsv = self.tooltip_upper_hsv
-        elif screen=='splash_square':
-            nemo = self.save_square(top=200,left=100,square_width=300)
-            lower_hsv = self.splash_lower_hsv
-            upper_hsv = self.splash_upper_hsv
 
         # [Median Blur]:
         # [Convert BGR to HSV]:
@@ -372,41 +362,41 @@ class mouse_listener(PyMouseEvent):
 
         if button == 2 and press == True and self._cnt==0:
             self._cnt+=1
-            self.sp.calibrate_image(screen='splash_square')
+            print '[EXITING BOBBER BOT]'
+            sys.exit(1)
             self.stop()
 
     def find_bobber(self):
-        if self._fishing:
-            thresh = self.sp.thresh_image(screen='bobber')
+        thresh = self.sp.thresh_image(screen='bobber')
 
-            self._bobber_reset=False
-            for x in range(0, thresh.shape[0]):
-                for y in range(0, thresh.shape[1]):
-                    # [Check for white pixel]:
-                    if thresh[x,y] == 255:
-                        _coords = (x, y)
-                        _bobber_loc = self._check_bobber_loc(_coords)
+        self._bobber_reset=False
+        for x in range(0, thresh.shape[0]):
+            for y in range(0, thresh.shape[1]):
+                # [Check for white pixel]:
+                if thresh[x,y] == 255:
+                    _coords = (x, y)
+                    _bobber_loc = self._check_bobber_loc(_coords)
 
-                        # [Found Bobber!]:
-                        if _bobber_loc != 0:
-                            self._check_cnt=0
-                            self._fishing=False
-                            return _bobber_loc
-                        #else:
-                        #    if self._check_cnt > 25:
-                        #        self.cast_pole('25_check_cnt')
-                        #    self._check_cnt+=1
+                    # [Found Bobber!]:
+                    if _bobber_loc != 0:
+                        self._check_cnt=0
+                        self._fishing=False
+                        return _bobber_loc
+                    #else:
+                    #    if self._check_cnt > 25:
+                    #        self.cast_pole('25_check_cnt')
+                    #    self._check_cnt+=1
 
-                        # [Check to see if we are past 30 second timer]:
-                        if self._timer_elapsed >= 30:
-                            self.cast_pole('30sec_bobber')
-                        self._timer_elapsed = (time.time() - self._timer_start)
+                    # [Check to see if we are past 30 second timer]:
+                    if self._timer_elapsed >= 30:
+                        self.cast_pole('30sec_bobber')
+                    self._timer_elapsed = (time.time() - self._timer_start)
 
-                    # [Check for exit conditions]:
-                    if self._bobber_reset==True or self._fishing==False:
-                        break
+                # [Check for exit conditions]:
                 if self._bobber_reset==True or self._fishing==False:
                     break
+            if self._bobber_reset==True or self._fishing==False:
+                break
         return 0
 
     # [Move mouse to _coords /capture/ check for tooltip]:
@@ -439,46 +429,37 @@ class mouse_listener(PyMouseEvent):
         return 0
 
     # [Splash]:
-    # square_bobber_64.png
-    # square_bobber_70.png
     def track_bobber(self, _bobber_coords):
-        # [Take screenshot of square around bobber for splash detection bounds]:
-        self.sp.capture()
-        nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
-
-        # [SSIM vs last bobber]:
-        if _first_bobber_square is None:
-            self._first_bobber_square = nemo
-            self._last_bobber_square = nemo
-            imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
-        else:
-            _bobber_ssim = self.bobber_ssim(nemo)
-
-            # [SPLASH DETECTED]:
-            #if _bobber_ssim < .73: # stepwise
-            if _bobber_ssim < .7: # vs_first
-                pyautogui.rightClick(x=None, y=None)
-                #self.cast_pole('Found Bobber')
-                sys.exit(1)
-
-            # [Make current bobber, last bobber]:
-            self._last_bobber_square = nemo
-
-        '''
         # [Track bobber for 30 seconds, taking pictures]:
-        while self._timer_elapsed < 30:
+        _bobber_found = False
+        while self._timer_elapsed < 30 and _bobber_found==False:
             # [Take screenshot of square around bobber for splash detection bounds]:
             self.sp.capture()
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
-            imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
-            self._cnt+=1
-            self._timer_elapsed = (time.time() - self._timer_start)
 
-        # [Right click / Recast after 30 second]:
-        pyautogui.rightClick(x=None, y=None)
-        self.cast_pole('Found Bobber')
-        sys.exit(1)
-        '''
+            # [SSIM vs last bobber]:
+            if self._first_bobber_square is None:
+                self._first_bobber_square = nemo
+                self._last_bobber_square = nemo
+                imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
+                self._cnt+=1
+            else:
+                _bobber_ssim = self.bobber_ssim(nemo)
+
+                # [SPLASH DETECTED]:
+                #if _bobber_ssim < .73: # stepwise
+                if _bobber_ssim < .7: # vs_first
+                    print '[SPLASH DETECTED!]'
+                    pyautogui.rightClick(x=None, y=None)
+                    _bobber_found = True
+                    self._first_bobber_square = None
+                    self.cast_pole('Found Bobber')
+                    #sys.exit(1)
+
+                # [Make current bobber, last bobber]:
+                self._last_bobber_square = nemo
+
+            self._timer_elapsed = (time.time() - self._timer_start)
 
 
     #vs_first: USUALLY above .75  | ALMOST ALWAYS above .7
@@ -486,8 +467,8 @@ class mouse_listener(PyMouseEvent):
     #_splash_: vs_first BELOW: .7 | stepwise BELOW: .75
     def bobber_ssim(self, nemo):
         # [from_first]:
-        imageA = cv2.imread(self._first_bobber_square)
-        imageB = cv2.imread(nemo)
+        imageA = self._first_bobber_square
+        imageB = nemo
         grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
         (score, diff) = compare_ssim(grayA, grayB, full=True)
@@ -495,13 +476,21 @@ class mouse_listener(PyMouseEvent):
         _ssim_score_vs_first = score
 
         # [stepwise]:
-        imageA = cv2.imread(self._last_bobber_square)
-        imageB = cv2.imread(nemo)
+        imageA = self._last_bobber_square
+        imageB = nemo
         grayA = cv2.cvtColor(imageA, cv2.COLOR_BGR2GRAY)
         grayB = cv2.cvtColor(imageB, cv2.COLOR_BGR2GRAY)
         (score, diff) = compare_ssim(grayA, grayB, full=True)
         #diff = (diff * 255).astype("uint8")
         _ssim_score_stepwise = score
+
+        imsave('square_bobber_{0}.png'.format(self._cnt), self._last_bobber_square)
+        self._cnt+=1
+        imsave('square_bobber_{0}.png'.format(self._cnt), nemo)
+        self._cnt+=1
+
+        #print '_ssim_score_vs_first: {0}'.format(_ssim_score_vs_first)
+        #print '_ssim_score_stepwise: {0}'.format(_ssim_score_stepwise)
 
         return _ssim_score_vs_first
         #return _ssim_score_stepwise
@@ -622,6 +611,7 @@ class mouse_listener(PyMouseEvent):
         '''
 
 
+#[0]: Saving configs issue(?)
 #[1]: gaugeWater test / SSIM test / motion detection test
 #[2]: treshold /detect splash
 #[3]: Threaded calls with Twisted (rather than sleep-based)
@@ -629,7 +619,7 @@ class mouse_listener(PyMouseEvent):
 if __name__ == '__main__':
     sp = ScreenPixel()
     c = mouse_listener(sp)
-    #c.run()
-    #print '[fin.]'
+    c.run()
+    print '[fin.]'
 
-    c.gauge_water()
+    #c.gauge_water()
