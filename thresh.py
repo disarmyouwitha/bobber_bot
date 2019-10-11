@@ -288,7 +288,7 @@ class mouse_listener(PyMouseEvent):
     _timer_elapsed = 30
     _bobber_reset = False
     _bauble_start = None
-    _bauble_elapsed = 600
+    _bauble_elapsed = 660
 
     # [Screen Pixel]:
     _cnt = 0
@@ -317,7 +317,7 @@ class mouse_listener(PyMouseEvent):
             self._fishing=True
 
     def bauble_check(self):
-        if self._bauble_elapsed >= 600: # 10min
+        if self._bauble_elapsed >= 660: # 10min
             print '[casting_bauble]'
             pyautogui.typewrite('9') # bauble skill on actionbar
             pyautogui.typewrite('7') # bauble skill on actionbar
