@@ -2,35 +2,38 @@ import os
 import sys
 import cv2
 import time
+import numpy
 import pyaudio
+import imageio
 import pyautogui
 import contextlib
-import scipy.misc #do I need to import the whole module, or just imsave below?
-import numpy as np
-from scipy.misc import imsave
 from playsound import playsound
 import Quartz.CoreGraphics as CG
-from pymouse import PyMouseEvent
+
+#[Python3 re-write]:
+#python3 -m pip install scipy
+#python3 -m pip install pyaudio
+#python3 -m pip install imageio
+#python3 -m pip install pyautogui
+#python3 -m pip install playsound
+#python3 -m pip install opencv-python
 
 pyautogui.PAUSE = 0#2.5
 pyautogui.FAILSAFE = True
-
 
 class ScreenPixel(object):
     # [ScreenPixel Globals]:
     _data = None
     _numpy = None
     _thresh_cnt = 0
-    _screen_fast = None  # Not nessisary if we are returning / passing around the array(?)
-    _numpy_square = None # Not nessisary if we are returning / passing around the array(?)
 
     # [Threshold Presets]:
-    bobber_lower_hsv = np.array([80,0,0])
-    bobber_upper_hsv = np.array([140,255,255])
-    tooltip_lower_hsv = np.array([0,0,0])
-    tooltip_upper_hsv = np.array([25,255,255])
-    splash_lower_hsv = np.array([0,0,0])
-    splash_upper_hsv = np.array([255,255,255])
+    bobber_lower_hsv = numpy.array([80,0,0])
+    bobber_upper_hsv = numpy.array([140,255,255])
+    tooltip_lower_hsv = numpy.array([0,0,0])
+    tooltip_upper_hsv = numpy.array([25,255,255])
+    splash_lower_hsv = numpy.array([0,0,0])
+    splash_upper_hsv = numpy.array([255,255,255])
 
     def capture(self):
         region = CG.CGRectInfinite
@@ -49,10 +52,10 @@ class ScreenPixel(object):
         self.height = CG.CGImageGetHeight(image)
         self.get_numpy()
 
-        #imsave('screen.png', self._numpy)
+        #imageio.imwrite('screen.png', self._numpy)
 
     def get_numpy(self):
-        imgdata=np.fromstring(self._data,dtype=np.uint8).reshape(len(self._data)/4,4)
+        imgdata=numpy.frombuffer(self._data,dtype=numpy.uint8).reshape(int(len(self._data)/4),4)
         _numpy_bgr = imgdata[:self.width*self.height,:-1].reshape(self.height,self.width,3)
         _numpy_rgb = _numpy_bgr[...,::-1]
         self._numpy = _numpy_rgb
@@ -71,9 +74,8 @@ class ScreenPixel(object):
         startx = (x//2-(cropx//2))
         starty = (y//2-(cropy//2))
 
-        # [Trim _numpy array to _screen_fast]:
-        self._screen_fast = self._numpy[starty:starty+cropy,startx:startx+cropx]
-        return self._screen_fast
+        # [Trim _numpy array to screen_fast]:
+        return self._numpy[starty:starty+cropy,startx:startx+cropx]
 
     def save_square(self, top, left, square_width=100, mod=2, center=False):
         top = (top*mod)
@@ -100,9 +102,8 @@ class ScreenPixel(object):
             left_start = 0
         left_stop = (left_start+square_width)
 
-        # [Trim _numpy array to _numpy_square]:
-        self._numpy_square = self._numpy[top_start:top_stop,left_start:left_stop]
-        return self._numpy_square
+        # [Trim _numpy array to numpy_square]:
+        return self._numpy[top_start:top_stop,left_start:left_stop]
 
     def nothing(self, x):
         #print('Trackbar value: ' + str(x))
@@ -113,7 +114,7 @@ class ScreenPixel(object):
         # [Check for config files]:
         config_filename = 'config_{0}.txt'.format(screen)
         if os.path.isfile(config_filename):
-            _use_calibrate_config = raw_input('[Calibration config found for {0} | Use this?]: '.format(screen))
+            _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(screen))
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             _use_calibrate_config = False
@@ -122,17 +123,14 @@ class ScreenPixel(object):
         if _use_calibrate_config == True:
             with open(config_filename, 'r') as f:
                 config = f.read().split('\n')
-                lower_hsv = np.array([int(config[0]), int(config[1]), int(config[2])])
-                upper_hsv = np.array([int(config[3]), int(config[4]), int(config[5])])
+                lower_hsv = numpy.array([int(config[0]), int(config[1]), int(config[2])])
+                upper_hsv = numpy.array([int(config[3]), int(config[4]), int(config[5])])
             _calibrate_good = True
             # [Take calibration threshold picture of bookeeping]:
             self.thresh_image(screen)
         else:
-            raw_input('[Calibrating {0} in 3sec!]:'.format(screen))
+            input('[Calibrating {0} in 3sec!]:'.format(screen))
             time.sleep(3)
-            playsound('audio/sms_alert.mp3')
-            #playsound('audio/eas_beep.mp3')
-            #playsound('audio/bomb_siren.mp3')
 
             # [Capture of calibration image]:
             self.capture()
@@ -177,6 +175,9 @@ class ScreenPixel(object):
             cv2.setTrackbarPos('LowerV',window_name, lv)
             font = cv2.FONT_HERSHEY_SIMPLEX
 
+            # [Alert user calibration image is ready]:
+            playsound('audio/sms_alert.mp3')
+
             # [Keep calibration window open until ESC is pressed]:
             while True:
                 # [Threshold the HSV image]:
@@ -201,21 +202,21 @@ class ScreenPixel(object):
                 lv = cv2.getTrackbarPos('LowerV',window_name)
 
                 # [Set lower/upper HSV to get the current mask]:
-                upper_hsv = np.array([uh,us,uv])
-                lower_hsv = np.array([lh,ls,lv])
+                upper_hsv = numpy.array([uh,us,uv])
+                lower_hsv = numpy.array([lh,ls,lv])
 
             # [Cleanup Windows]:
             cv2.destroyAllWindows()
 
             # [Check Calibration /w user]:
             if _use_calibrate_config == False:
-                _calibrate_good = raw_input('[Calibration Good? Ready? (y/n)]: ')
+                _calibrate_good = input('[Calibration Good? Ready? (y/n)]: ')
                 _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
 
             if _calibrate_good == True:
                 # [Save Calibration image]: (Great for setup debug)
                 mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-                imsave('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
+                imageio.imwrite('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
                 self._thresh_cnt+=1
 
             if _calibrate_good == True and _use_calibrate_config == False:
@@ -226,7 +227,7 @@ class ScreenPixel(object):
                 (lh, ls, lv) = lower_hsv
                 (uh, us, uv) = upper_hsv
 
-                print '[Saving calibration to: {0}]'.format(config_filename)
+                print('[Saving calibration to: {0}]'.format(config_filename))
                 with open(config_filename, 'w') as f:
                     f.write('{0}\n'.format(lh)) #lower_hue
                     f.write('{0}\n'.format(ls)) #lower_saturation
@@ -266,7 +267,7 @@ class ScreenPixel(object):
         nemo_masked = cv2.inRange(hsv, lower_hsv, upper_hsv)
 
         if self._thresh_cnt<=3: # thresh_bobber, thresh_tooltip
-            imsave('screen_thresh_{0}{1}.png'.format(screen,self._thresh_cnt), nemo_masked)
+            imageio.imwrite('screen_thresh_{0}{1}.png'.format(screen,self._thresh_cnt), nemo_masked)
         self._thresh_cnt+=1
 
         return nemo_masked
@@ -277,11 +278,11 @@ def timer(msg):
     start = time.time()
     yield
     end = time.time()
-    print '%s: %.02fms' % (msg, (end-start)*1000)
+    print('%s: %.02fms'%(msg, (end-start)*1000))
 
 
-class mouse_listener(PyMouseEvent):
-    # [MouseListener Globals]:
+class bobber_bot():
+    # [BobberBot Globals]:
     _check_cnt = 0
     _fishing = False
     _timer_start = None
@@ -290,15 +291,15 @@ class mouse_listener(PyMouseEvent):
     _bauble_start = None
     _bauble_elapsed = 660
 
-    # [Screen Pixel]:
-    _cnt = 0
+    # [Included Classes]:
     sp = None
-    p = pyaudio.PyAudio()
+    pa = None
+    _cnt = 0
 
     def __init__(self, screen_pixel):
-        PyMouseEvent.__init__(self) 
         self.sp = screen_pixel
-        print '[Mouse Listening]'
+        self.pa = pyaudio.PyAudio()
+        print('[BobberBot Started]')
 
     def cast_pole(self, note=''):
         self._fishing = False
@@ -307,7 +308,7 @@ class mouse_listener(PyMouseEvent):
 
         self.bauble_check() # Apply bauble
 
-        print '[casting_pole: {0}]'.format(note)
+        print('[casting_pole: {0}]'.format(note))
         self._timer_start = time.time()
 
         if self._fishing == False:
@@ -318,7 +319,7 @@ class mouse_listener(PyMouseEvent):
 
     def bauble_check(self):
         if self._bauble_elapsed >= 660: # 10min
-            print '[casting_bauble]'
+            print('[casting_bauble]')
             pyautogui.typewrite('9') # bauble skill on actionbar
             pyautogui.typewrite('7') # bauble skill on actionbar
             time.sleep(10) # sleep while casting bauble~
@@ -326,49 +327,35 @@ class mouse_listener(PyMouseEvent):
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
-    def click(self, x, y, button, press):
-        int_x = int(x)
-        int_y = int(y)
+    def start(self):
+        # [Calibrate HSV for bobber/tooltip]:
+        self.sp.calibrate_image(screen='bobber')
+        self.sp.calibrate_image(screen='tooltip_square')
 
-        if button == 1 and press == True and self._cnt==0:
-            self._cnt+=1
+        input('[Enter to start bot!]: (3sec delay)')
+        time.sleep(3)
 
-            # [Calibrate HSV for bobber/tooltip]:
-            self.sp.calibrate_image(screen='bobber')
-            self.sp.calibrate_image(screen='tooltip_square')
+        while True:
+            try:
+                # [Start Fishing / 30sec fishing timer]:
+                if self._timer_elapsed >= 30:
+                    self.cast_pole('30sec')
+                self._timer_elapsed = (time.time() - self._timer_start)
 
-            # I can script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
-            raw_input('[Enter to start bot!]: (3sec delay)')
-            time.sleep(3)
+                # [Try to locate the bobber]:
+                _bobber_coords = self.find_bobber()
+                if _bobber_coords != 0:
+                    #self.track_bobber(_bobber_coords)
+                    self.listen_splash()
 
-            while True:
-                try:
-                    # [Start Fishing / 30sec fishing timer]:
-                    if self._timer_elapsed >= 30:
-                        self.cast_pole('30sec')
-                    self._timer_elapsed = (time.time() - self._timer_start)
-
-                    # [Try to locate the bobber]:
-                    _bobber_coords = self.find_bobber()
-                    if _bobber_coords != 0:
-                        #self.track_bobber(_bobber_coords)
-                        self.listen_splash()
-
-                except pyautogui.FailSafeException:
-                    self._bobber_reset=True
-                    print '[Bye]'
-                    continue
-                except KeyboardInterrupt:
-                    #self.cast_pole('Keyboard Interrupt')
-                    sys.exit(1)
-                    continue
-            self.stop()
-
-        if button == 2 and press == True and self._cnt==0:
-            self._cnt+=1
-            print '[EXITING BOBBER BOT]'
-            sys.exit(1)
-            self.stop()
+            except pyautogui.FailSafeException:
+                self._bobber_reset=True
+                print('[Bye]')
+                continue
+            except KeyboardInterrupt:
+                #self.cast_pole('Keyboard Interrupt')
+                sys.exit(1)
+                continue
 
     def find_bobber(self):
         thresh = self.sp.thresh_image(screen='bobber')
@@ -429,13 +416,13 @@ class mouse_listener(PyMouseEvent):
                 _tooltip_check+=1
 
         if _tooltip_check >= 1:
-            print '[FOUND IT!]: {0} | {1}'.format(_tooltip_check, _coords)
+            print('[FOUND IT!]: {0} | {1}'.format(_tooltip_check, _coords))
             return _coords
 
         return 0
 
+    # [Track bobber for 30 seconds, taking pictures]:
     def track_bobber(self, _bobber_coords):
-        # [Track bobber for 30 seconds, taking pictures]:
         while self._timer_elapsed < 30:
             self.sp.capture()
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
@@ -444,18 +431,19 @@ class mouse_listener(PyMouseEvent):
     def listen_splash(self, threshold=1500):
         CHUNK = 2**11
         RATE = 44100
-        stream = self.p.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
         _splash_detected = False
         while self._timer_elapsed < 30 and _splash_detected==False:
-            data = np.fromstring(stream.read(CHUNK),dtype=np.int16)
-            peak=np.average(np.abs(data))*2
+            data = numpy.frombuffer(stream.read(CHUNK),dtype=numpy.int16)
+            peak=numpy.average(numpy.abs(data))*2
             bars="#"*int(50*peak/2**16)
+
             if peak > 1000:
                 print("%05d %s"%(peak,bars))
 
             if peak > threshold:
-                print '[SPLASH DETECTED!]'
+                print('[SPLASH DETECTED!]')
                 pyautogui.rightClick(x=None, y=None)
                 _splash_detected = True
                 self.cast_pole('Found Bobber')
@@ -465,8 +453,11 @@ class mouse_listener(PyMouseEvent):
         return 0
 
 
+#[0]: listen_splash() should take average of sound to use as baseline for thresholding
+#[1]: listen_splash() should use *speaker* volume output rather than *microphone* input of speaker
+#[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
+#[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 if __name__ == '__main__':
     sp = ScreenPixel()
-    c = mouse_listener(sp)
-    c.run()
-    print '[fin.]'
+    bobber_bot(sp).start()
+    print('[fin.]')
