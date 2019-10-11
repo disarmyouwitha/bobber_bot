@@ -1,4 +1,4 @@
-# bobber_bot
+# [bobber_bot]:
 WoW Classic fishing bot.. for OSX.. for funzies.
 
 This bot is not finished, but coming along nicely.. I have achieved pretty solid tracking once HSV threshold is configured.
@@ -6,9 +6,15 @@ This bot is not finished, but coming along nicely.. I have achieved pretty solid
 
 I'm *pretty sure* this only works on OSX right now, however `ScreenPixel.capture()` is the only function that I think would need to be re-written for Windows, as it's using tightly optimized screen grab code for OSX right now. (Sorry Windows, yall got all the cool C hooks, so there is plenty of code you can use for this -- send me a Pull Request :P)
 
-thresh.py | Running this script and left clicking will start the "main loop" which will take you through calibration. 
-            After calibrating you can start the bot and it will press "8" to fish and begind to track the bobber.
-            AT THE MOMENT: The bot is just putting the mouse over the bobber and "tracking" it for 30 seconds -- I'm working on splash detection now, but if you just want to see how fast it can locate a bobber.. change track_bobber() to right click rather than waiting 30seconds in a while loop =]
-            ^ (This file will eventually be renamed, once I get everything working)~
+The other thing that might throw things into upheaval is if your `Resolution Scale` is not set to 50% -- This  script has all been developed / tested on my macbook, which.. uses 2880x1800 @ 50% resolution scale. (Certain functions calculating mouse position are using mod=2, etc that would need to change otherwise)
 
-sssim.py  | just a testing script with comments for notes. Will be cleaned out eventually.
+
+# [thresh.py]:
+> Running this script and left clicking will start the "main loop" which will take you through calibration. 
+> After calibrating you can start the bot and it will press "8" to fish and begind to track the bobber.
+# [AT THE MOMENT]: 
+> > The bot will cast `Baubles from "9"` onto `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
+> > It will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
+> > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
+> > Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
+^ (This file may eventually be renamed, once I get everything working)~
