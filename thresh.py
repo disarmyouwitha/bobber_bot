@@ -6,8 +6,8 @@ import numpy
 import pyaudio
 import imageio
 import pyautogui
+import playsound
 import contextlib
-from playsound import playsound
 import Quartz.CoreGraphics as CG
 
 #[Python3 re-write]:
@@ -176,7 +176,7 @@ class ScreenPixel(object):
             font = cv2.FONT_HERSHEY_SIMPLEX
 
             # [Alert user calibration image is ready]:
-            playsound('audio/sms_alert.mp3')
+            playsound.playsound('audio/sms_alert.mp3')
 
             # [Keep calibration window open until ESC is pressed]:
             while True:
