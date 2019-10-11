@@ -18,6 +18,8 @@ import Quartz.CoreGraphics as CG
 #python3 -m pip install playsound
 #python3 -m pip install opencv-python
 
+# https://rogueamoeba.com/audiohijack/
+
 pyautogui.PAUSE = 0#2.5
 pyautogui.FAILSAFE = True
 
