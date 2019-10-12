@@ -258,7 +258,7 @@ class ScreenPixel(object):
         hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
         nemo_masked = cv2.inRange(hsv, lower_hsv, upper_hsv)
 
-        if self._thresh_cnt<=3: # thresh_bobber, thresh_tooltip
+        if self._thresh_cnt<=0: # thresh_bobber, thresh_tooltip
             imageio.imwrite('screen_thresh_{0}{1}.png'.format(screen,self._thresh_cnt), nemo_masked)
         self._thresh_cnt+=1
 
@@ -275,46 +275,42 @@ def timer(msg):
 
 class bobber_bot():
     # [BobberBot Globals]:
-    _check_cnt = 0
-    _fishing = False
+    _miss_cnt = 0
+    #_check_cnt = 0 # Disabled currently.. Not needed(?)
     _timer_start = None
     _timer_elapsed = 30
     _bobber_reset = False
     _bauble_start = None
     _bauble_elapsed = 660
+    _splash_detected = False
 
     # [Included Classes]:
     sp = None
     pa = None
-    _cnt = 0
 
     def __init__(self, screen_pixel):
         self.sp = screen_pixel
         self.pa = pyaudio.PyAudio()
-        print('[BobberBot Started]')
 
     def cast_pole(self, note=''):
-        self._fishing = False
         self._timer_elapsed = 0
-        self._first_bobber_square = None
+        self._splash_detected = False
 
-        self.bauble_check() # Apply bauble
+        # [Check to apply bauble]:
+        self.bauble_check()
 
         print('[casting_pole: {0}]'.format(note))
         self._timer_start = time.time()
-
-        if self._fishing == False:
-            pyautogui.typewrite('8') # Fishing skill on actionbar
-            time.sleep(2) # Wait so that we don't try and find old bobber as it fades
-            self._bobber_reset=True
-            self._fishing=True
+        pyautogui.typewrite('8') # Fishing skill on actionbar
+        time.sleep(3) # Wait so that we don't try and find old bobber as it fades
+        self._bobber_reset=True
 
     def bauble_check(self):
-        if self._bauble_elapsed >= 660: # 10min
-            print('[casting_bauble]')
-            time.sleep(10) # sleep while casting bauble~
+        if self._bauble_elapsed >= 630: # 10min (and 30secs)
+            #print('[casting_bauble]')
             pyautogui.typewrite('9') # bauble skill on actionbar
             pyautogui.typewrite('7') # bauble skill on actionbar
+            time.sleep(10) # sleep while casting bauble~
             self._bauble_elapsed = 0
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
@@ -327,11 +323,21 @@ class bobber_bot():
         input('[Enter to start bot!]: (3sec delay)')
         time.sleep(3)
 
+        print('[BobberBot Started]')
         while True:
             try:
                 # [Start Fishing / 30sec fishing timer]:
-                if self._timer_elapsed >= 30:
+                if self._timer_elapsed >= 30 or self._splash_detected:
+                    if self._splash_detected == False:
+                        self._miss_cnt+=1
+                        print('[Miss Count: {0}]'.format(self._miss_cnt))
+
+                        if self._miss_cnt >= 20:
+                            print('[WoW crashed? Miss Count: {0}]'.format(self._miss_cnt))
+                            sys.exit(1)
+
                     self.cast_pole('30sec')
+
                 self._timer_elapsed = (time.time() - self._timer_start)
 
                 # [Try to locate the bobber]:
@@ -343,9 +349,6 @@ class bobber_bot():
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
                 print('[Bye]')
-                continue
-            except KeyboardInterrupt:
-                #self.cast_pole('Keyboard Interrupt')
                 sys.exit(1)
                 continue
 
@@ -356,32 +359,33 @@ class bobber_bot():
         self._bobber_reset=False
         for x in range(0, thresh.shape[0]):
             for y in range(0, thresh.shape[1]):
-                # [Check for white pixel]:
+                # [If white pixel found, check for bobber]:
                 if thresh[x,y] == 255:
                     _coords = (x, y)
                     _bobber_loc = self._check_bobber_loc(_coords)
 
                     # [Found Bobber!]:
                     if _bobber_loc != 0:
-                        self._check_cnt=0
-                        self._fishing=False
+                        #self._check_cnt=0
                         return _bobber_loc
                     else:
-                        if self._check_cnt > 100:
-                            self._bobber_reset = True
-                            self._check_cnt = 0
+                        # [Passed 30sec, pass back to main loop for recast]:
+                        if self._timer_elapsed >= 30:
+                            return 1
                         else:
-                            self._check_cnt+=1
+                            self._timer_elapsed = (time.time() - self._timer_start)
 
-                    # [Check to see if we are past 30 second timer]:
-                    if self._timer_elapsed >= 30:
-                        self.cast_pole('30sec_bobber')
-                    self._timer_elapsed = (time.time() - self._timer_start)
+                        # [If we have checked 100 pixels and haven't found the bobber, reset]:
+                        #if self._check_cnt > 100:
+                        #    self._check_cnt = 0
+                        #    return 2
+                        #else:
+                        #    self._check_cnt+=1
 
                 # [Check for exit conditions]:
-                if self._bobber_reset==True or self._fishing==False:
+                if self._bobber_reset==True:
                     break
-            if self._bobber_reset==True or self._fishing==False:
+            if self._bobber_reset==True:
                 break
         return 0
 
@@ -423,7 +427,8 @@ class bobber_bot():
 
     # [Listen for sound of the bobber splash]:
     def listen_splash(self, threshold=1500):
-        CHUNK = 2**11
+        #CHUNK = 2**11
+        CHUNK = 2048
         RATE = 44100
 
         #dev_idx = 0 # Microphone as input
@@ -433,27 +438,22 @@ class bobber_bot():
         else:
             stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
-        _splash_detected = False
-        while self._timer_elapsed < 30 and _splash_detected==False:
+        self._splash_detected = False
+        while self._timer_elapsed < 30 and self._splash_detected==False:
             data = numpy.frombuffer(stream.read(CHUNK),dtype=numpy.int16)
             peak=numpy.average(numpy.abs(data))*2
-            bars="#"*int(50*peak/2**16)
-
-            if peak > 1000:
-                print("%05d %s"%(peak,bars))
 
             if peak > threshold:
-                print('[SPLASH DETECTED!]')
+                print('[SPLASH DETECTED!]: {0} / {1}'.format(peak, threshold))
                 pyautogui.rightClick(x=None, y=None)
-                _splash_detected = True
-                self.cast_pole('Found Bobber')
+                self._splash_detected = True
+                return 1 # Return to main loop to recast pole
 
             self._timer_elapsed = (time.time() - self._timer_start)
-
         return 0
 
 
-#[0]: `Mouse Mode/Chatter bug`: Only use mouse/clicks for fishing, rather than keyboard so that you can still type/talk while the bot is going. :3
+#[1]: `Mouse Mode/Chatter bug`: Only use mouse/clicks for fishing, rather than keyboard so that you can still type/talk while the bot is going. :3
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 if __name__ == '__main__':
