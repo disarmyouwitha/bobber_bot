@@ -15,26 +15,36 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 # [thresh.py]:
 > Running this script will start the "main loop" which will take you through calibration, then start the bot!
-> After calibrating you can start the bot and it will press "8" to fish and begin to look for the bobber.
-> Once found it will use your audio to listen for the sound of the splash to catch your fish!
 
 # [audio.py]:
 > A small test script to make sure you are recording sound from your Input source. (Mic/Speakers)
+
 > Used to figure out the indexes/threshold if the preset ones dont work for you!
 
+
 # [AT THE MOMENT]: 
-> > The bot will cast `Baubles from "9"` onto `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
-> > It will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
-> > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
-> > Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
-^ (This file may eventually be renamed, once I get everything working)~
+> The bot will cast `Baubles from "9"` onto `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
+
+> It will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
+
+> It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
+
+> Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
+
 
 # [Python3 re-write]:
 > brew install python3 # If you need python
+
 > brew install portaudio
+
 > python3 -m pip install pyaudio
+
 > python3 -m pip install imageio
+
 > python3 -m pip install pyautogui
+
 > python3 -m pip install playsound
+
 > python3 -m pip install opencv-python
-> > https://github.com/mattingalls/Soundflower # Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
+
+> *https://github.com/mattingalls/Soundflower* # Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
