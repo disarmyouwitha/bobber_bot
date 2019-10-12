@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import json
 import time
 import numpy
 import pyaudio
@@ -8,10 +9,20 @@ import imageio
 import pyautogui
 import playsound
 import contextlib
+from pymouse import PyMouseEvent # For Calibrating MouseMode(?)
 import Quartz.CoreGraphics as CG
 
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
+
+# [Neat helper function for timing operations!]:
+@contextlib.contextmanager
+def timer(msg):
+    start = time.time()
+    yield
+    end = time.time()
+    print('%s: %.02fms'%(msg, (end-start)*1000))
+
 
 class ScreenPixel(object):
     # [ScreenPixel Globals]:
@@ -258,31 +269,26 @@ class ScreenPixel(object):
         hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
         nemo_masked = cv2.inRange(hsv, lower_hsv, upper_hsv)
 
-        if self._thresh_cnt<=0: # thresh_bobber, thresh_tooltip
+        if self._thresh_cnt<0: # thresh_bobber, thresh_tooltip
             imageio.imwrite('screen_thresh_{0}{1}.png'.format(screen,self._thresh_cnt), nemo_masked)
         self._thresh_cnt+=1
 
         return nemo_masked
 
 
-@contextlib.contextmanager
-def timer(msg):
-    start = time.time()
-    yield
-    end = time.time()
-    print('%s: %.02fms'%(msg, (end-start)*1000))
-
-
 class bobber_bot():
     # [BobberBot Globals]:
     _miss_cnt = 0
-    #_check_cnt = 0 # Disabled currently.. Not needed(?)
+    _mouse_mode = False # Mouse Mode
     _timer_start = None
     _timer_elapsed = 30
     _bobber_reset = False
     _bauble_start = None
     _bauble_elapsed = 660
     _splash_detected = False
+    _fishing_pole_loc = None
+    _fishing_skill_loc = None
+    _fishing_bauble_loc = None
 
     # [Included Classes]:
     sp = None
@@ -301,15 +307,32 @@ class bobber_bot():
 
         print('[casting_pole: {0}]'.format(note))
         self._timer_start = time.time()
-        pyautogui.typewrite('8') # Fishing skill on actionbar
+
+        # [Use Fishing skill]:
+        if _mouse_mode == True:
+            pyautogui.moveTo(self._fishing_skill_loc.get('x'), self._fishing_skill_loc.get('y'), duration=1)
+            pyautogui.leftClick(x=None, y=None)
+        else:
+            pyautogui.typewrite('8')
+
         time.sleep(3) # Wait so that we don't try and find old bobber as it fades
         self._bobber_reset=True
 
     def bauble_check(self):
         if self._bauble_elapsed >= 630: # 10min (and 30secs)
             #print('[casting_bauble]')
-            pyautogui.typewrite('9') # bauble skill on actionbar
-            pyautogui.typewrite('7') # bauble skill on actionbar
+            if _mouse_mode == True:
+                # [Click Fishing bauble]:
+                pyautogui.moveTo(self._fishing_bauble_loc.get('x'), self._fishing_bauble_loc.get('y'), duration=1)
+                pyautogui.leftClick(x=None, y=None)
+
+                # [Click Fishing pole]:
+                pyautogui.moveTo(self._fishing_pole_loc.get('x'), self._fishing_pole_loc.get('y'), duration=1)
+                pyautogui.leftClick(x=None, y=None)
+            else:
+                pyautogui.typewrite('9') # fishing bauble on toolbar
+                pyautogui.typewrite('7') # fishing pole on toolbar
+
             time.sleep(10) # sleep while casting bauble~
             self._bauble_elapsed = 0
             self._bauble_start = time.time()
@@ -319,6 +342,9 @@ class bobber_bot():
         # [Calibrate HSV for bobber/tooltip]:
         self.sp.calibrate_image(screen='bobber')
         self.sp.calibrate_image(screen='tooltip_square')
+
+        if self._mouse_mode == True:
+            self.calibrate_mouse_toolbar()
 
         input('[Enter to start bot!]: (3sec delay)')
         time.sleep(3)
@@ -366,7 +392,6 @@ class bobber_bot():
 
                     # [Found Bobber!]:
                     if _bobber_loc != 0:
-                        #self._check_cnt=0
                         return _bobber_loc
                     else:
                         # [Passed 30sec, pass back to main loop for recast]:
@@ -374,13 +399,6 @@ class bobber_bot():
                             return 1
                         else:
                             self._timer_elapsed = (time.time() - self._timer_start)
-
-                        # [If we have checked 100 pixels and haven't found the bobber, reset]:
-                        #if self._check_cnt > 100:
-                        #    self._check_cnt = 0
-                        #    return 2
-                        #else:
-                        #    self._check_cnt+=1
 
                 # [Check for exit conditions]:
                 if self._bobber_reset==True:
@@ -413,7 +431,7 @@ class bobber_bot():
                 _tooltip_check+=1
 
         if _tooltip_check >= 1:
-            print('[FOUND IT!]: {0} | {1}'.format(_tooltip_check, _coords))
+            #print('[FOUND IT!]: {0} | {1}'.format(_tooltip_check, _coords))
             return _coords
 
         return 0
@@ -444,7 +462,7 @@ class bobber_bot():
             peak=numpy.average(numpy.abs(data))*2
 
             if peak > threshold:
-                print('[SPLASH DETECTED!]: {0} / {1}'.format(peak, threshold))
+                #print('[SPLASH DETECTED!]: {0} / {1}'.format(peak, threshold))
                 pyautogui.rightClick(x=None, y=None)
                 self._splash_detected = True
                 return 1 # Return to main loop to recast pole
@@ -452,11 +470,84 @@ class bobber_bot():
             self._timer_elapsed = (time.time() - self._timer_start)
         return 0
 
+    # [Have user calibrate location of items on taskbar]:
+    def calibrate_mouse_toolbar(self):
+        # [Check for config files]:
+        config_filename = 'config_mouse_toolbar.json'
+        if os.path.isfile(config_filename):
+            _use_calibrate_config = input('[Calibration config found for mouse_toolbar | Use this?]: ')
+            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
+        else:
+            _use_calibrate_config = False
+
+        if _use_calibrate_config == True:
+            _calibrate_good = True
+        else:
+            # [Calibrate mouse _coords for each action bar item]:
+            action_bar = ['fishing_pole', 'fishing_skill', 'fishing_bauble']
+            for action_item in action_bar:
+                mc = mouse_calibrator(action_item)
+                print('[Calibrating {0} toolbar location! Alt-tab and go left-click it!]'.format(action_item))
+                print('[Right-Click after you have clicked the skill to save the location, and come back here!]') 
+                mc.run()
+            _calibrate_good = True
+
+        # [Load config file into globals]:
+        if _calibrate_good == True:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+                self._fishing_pole_loc = configs['fishing_pole']
+                self._fishing_skill_loc = configs['fishing_skill']
+                self._fishing_bauble_loc = configs['fishing_bauble']
+
+        print('[Mouse Calibration finished~ Domo Arigato!]')
+
+
+class mouse_calibrator(PyMouseEvent):
+    _click_cnt = 0
+    action_loc = None
+    action_name = None
+
+    def __init__(self, action_item):
+        PyMouseEvent.__init__(self)
+        self.action_name = action_item
+
+    def click(self, x, y, button, press):
+        int_x = int(x)
+        int_y = int(y)
+
+        # [Left click to get X,Y _coords]:
+        if button==1 and press==True:
+            self.action_loc = {self.action_name : { "x":int_x, "y":int_y }}
+            print(self.action_loc)
+            self._click_cnt+=1
+
+        # [Right click to save config]:
+        if button==2 and press==True and self._click_cnt>0:
+            config_filename = 'config_mouse_toolbar.json'
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+
+            # [Update config for action_item]:
+            configs.update(self.action_loc)
+
+            # [Save back to config file to update values]:
+            with open(config_filename, 'w') as fp:
+                json.dump(configs, fp)
+
+            print('[Saving config for {0}!]')
+            self.stop()
+
 
 #[1]: `Mouse Mode/Chatter bug`: Only use mouse/clicks for fishing, rather than keyboard so that you can still type/talk while the bot is going. :3
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 if __name__ == '__main__':
+    #sp = ScreenPixel()
+    #bobber_bot(sp).start()
+    #print('[fin.]')
+
     sp = ScreenPixel()
-    bobber_bot(sp).start()
-    print('[fin.]')
+    bb = bobber_bot(sp)
+    bb.calibrate_mouse_toolbar()
+    #print('[fin.]')

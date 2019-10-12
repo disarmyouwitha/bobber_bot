@@ -1,0 +1,5 @@
+{
+  "fishing_pole"   : { "x":10, "y":10 },
+  "fishing_skill"  : { "x":10, "y":10 },
+  "fishing_bauble" : { "x":10, "y":10 }
+}

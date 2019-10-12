@@ -31,6 +31,8 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
 
+# [Thinking about..]:
+> Mouse Mode that only uses your mouse.. incase you are a chatter bug like me and would like to keep chatting with ppl while the bot goes. =]
 
 # [Python3 re-write]:
 > brew install python3 # If you need python
@@ -42,6 +44,8 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 > python3 -m pip install imageio
 
 > python3 -m pip install pyautogui
+
+> python3 -m pip install PyUserInput
 
 > python3 -m pip install playsound
 
