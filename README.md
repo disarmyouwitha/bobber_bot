@@ -10,7 +10,7 @@ I'm *pretty sure* this only works on OSX right now, however `ScreenPixel.capture
 The other thing that might throw things into upheaval is if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% resolution scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
 
 One last note.. `listen_splash()` is using the speaker's output to detect the sound of the splash -- This takes some setup (with Soundflower on OSX) or by creating a Mixer on windows.. I will honestly have to do more research/post better steps for this later. 
-~If you don't want to use the speakers input, you can optionally use the mic from say, your macbook, but tbh I found this super annoying.~
+_If you don't want to use the speakers input, you can optionally use the mic from say, your macbook, but tbh I found this super annoying._
 
 
 # [thresh.py]:
