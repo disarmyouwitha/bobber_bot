@@ -14,8 +14,10 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 
 # [thresh.py]:
-> Running this script and left clicking will start the "main loop" which will take you through calibration.
-> After calibrating you can start the bot and it will press "8" to fish and begind to track the bobber.
+> Running this script will start the "main loop" which will take you through calibration, then start the bot!
+> After calibrating you can start the bot and it will press "8" to fish and begin to look for the bobber.
+> Once found it will use your audio to listen for the sound of the splash to catch your fish!
+
 # [audio.py]:
 > A small test script to make sure you are recording sound from your Input source. (Mic/Speakers)
 > Used to figure out the indexes/threshold if the preset ones dont work for you!
