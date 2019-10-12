@@ -18,3 +18,12 @@ The other thing that might throw things into upheaval is if your `Resolution Sca
 > > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
 > > Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
 ^ (This file may eventually be renamed, once I get everything working)~
+
+# [Python3 re-write]:
+> brew install portaudio
+> python3 -m pip install pyaudio
+> python3 -m pip install imageio
+> python3 -m pip install pyautogui
+> python3 -m pip install playsound
+> python3 -m pip install opencv-python
+> > https://github.com/mattingalls/Soundflower # Enables piping system output to virtual input

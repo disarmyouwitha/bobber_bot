@@ -10,17 +10,7 @@ import playsound
 import contextlib
 import Quartz.CoreGraphics as CG
 
-#[Python3 re-write]:
-#python3 -m pip install scipy
-#python3 -m pip install pyaudio
-#python3 -m pip install imageio
-#python3 -m pip install pyautogui
-#python3 -m pip install playsound
-#python3 -m pip install opencv-python
-
-# https://rogueamoeba.com/audiohijack/
-
-pyautogui.PAUSE = 0#2.5
+pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
 class ScreenPixel(object):
@@ -376,7 +366,7 @@ class bobber_bot():
                         self._fishing=False
                         return _bobber_loc
                     else:
-                        if self._check_cnt > 10:
+                        if self._check_cnt > 100:
                             self._bobber_reset = True
                             self._check_cnt = 0
                         else:
@@ -433,7 +423,10 @@ class bobber_bot():
     def listen_splash(self, threshold=1500):
         CHUNK = 2**11
         RATE = 44100
-        stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
+
+        dev_idx = 2
+        stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, input_device_index=dev_idx, frames_per_buffer=CHUNK)
+        #stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
         _splash_detected = False
         while self._timer_elapsed < 30 and _splash_detected==False:
