@@ -312,9 +312,9 @@ class bobber_bot():
     def bauble_check(self):
         if self._bauble_elapsed >= 660: # 10min
             print('[casting_bauble]')
+            time.sleep(10) # sleep while casting bauble~
             pyautogui.typewrite('9') # bauble skill on actionbar
             pyautogui.typewrite('7') # bauble skill on actionbar
-            time.sleep(10) # sleep while casting bauble~
             self._bauble_elapsed = 0
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
@@ -337,7 +337,7 @@ class bobber_bot():
                 # [Try to locate the bobber]:
                 _bobber_coords = self.find_bobber()
                 if _bobber_coords != 0:
-                    #self.track_bobber(_bobber_coords)
+                    #self.track_bobber(_bobber_coords) # Track bobber for 30seconds, taking screenshots
                     self.listen_splash()
 
             except pyautogui.FailSafeException:
@@ -349,6 +349,7 @@ class bobber_bot():
                 sys.exit(1)
                 continue
 
+    # [Iterates over HSV threshold of screengrab to try and locate the bobber]:
     def find_bobber(self):
         thresh = self.sp.thresh_image(screen='bobber')
 
@@ -420,13 +421,17 @@ class bobber_bot():
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
             self._timer_elapsed = (time.time() - self._timer_start)
 
+    # [Listen for sound of the bobber splash]:
     def listen_splash(self, threshold=1500):
         CHUNK = 2**11
         RATE = 44100
 
-        dev_idx = 2
-        stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, input_device_index=dev_idx, frames_per_buffer=CHUNK)
-        #stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        #dev_idx = 0 # Microphone as input
+        dev_idx = 2 # Speakers as input
+        if dev_idx > 0:
+            stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, input_device_index=dev_idx, frames_per_buffer=CHUNK)
+        else:
+            stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
         _splash_detected = False
         while self._timer_elapsed < 30 and _splash_detected==False:
@@ -448,8 +453,7 @@ class bobber_bot():
         return 0
 
 
-#[0]: listen_splash() should take average of sound to use as baseline for thresholding
-#[1]: listen_splash() should use *speaker* volume output rather than *microphone* input of speaker
+#[0]: `Mouse Mode/Chatter bug`: Only use mouse/clicks for fishing, rather than keyboard so that you can still type/talk while the bot is going. :3
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 if __name__ == '__main__':
