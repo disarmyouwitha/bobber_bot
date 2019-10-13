@@ -288,14 +288,6 @@ def audio_callback(in_data, frame_count, time_info, status):
         if peak > bb._audio_threshold and bb._splash_detected==False:
             bb._splash_detected = True
 
-            # [If Splash detected, and bobber found, right-click bobber]:
-            if bb._bobber_found != False:
-                if bb._timer_start is not None:
-                    print('splash_found_bobber: {0}'.format(peak))
-            else:
-                if bb._timer_start is not None:
-                    print('splash_NO_bobber: {0}'.format(peak))
-
         return data, pyaudio.paContinue
 
     except pyautogui.FailSafeException:
@@ -328,7 +320,7 @@ class bobber_bot():
 
     # [BobberBot Settings]:
     _mouse_mode = False # Mouse Mode
-    _use_baubles = False
+    _use_baubles = True
 
     # [Included Classes]:
     sp = None
@@ -359,7 +351,6 @@ class bobber_bot():
         if self._mouse_mode == True:
             time.sleep(2)
             pyautogui.click(x=self._fishing_skill_loc.get('x'), y=self._fishing_skill_loc.get('y'), button='left', clicks=1)
-            pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25)
         else:
             pyautogui.typewrite('8')
 
@@ -379,9 +370,6 @@ class bobber_bot():
 
                 # [Click Fishing pole]:
                 pyautogui.click(x=self._fishing_pole_loc.get('x'), y=self._fishing_pole_loc.get('y'), button='left', clicks=1)
-
-                # [Move mouse to center of the screen]:
-                pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25)
             else:
                 pyautogui.typewrite('9') # fishing bauble on toolbar
                 pyautogui.typewrite('7') # fishing pole on toolbar
@@ -602,7 +590,6 @@ class mouse_calibrator(PyMouseEvent):
                 self.stop()
 
 
-#[0]: Do I need both `_bobber_found` and `_bobber_reset` (?)
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 bb = bobber_bot()
