@@ -24,6 +24,7 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 # [AT THE MOMENT]: 
 > The bot will cast `Baubles from "9"` onto `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
+> ^(Optionally you can enable `_mouse_mode=True` to only use the mouse for fishing actions and it will walk you through calibration -- allowing you to type to your guild, etc, if you are a chatter-bug like me =3)
 
 > It will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
 
@@ -31,8 +32,6 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
 
-# [Thinking about..]:
-> Mouse Mode that only uses your mouse.. incase you are a chatter bug like me and would like to keep chatting with ppl while the bot goes. =]
 
 # [Python3 re-write]:
 > brew install python3 # If you need python

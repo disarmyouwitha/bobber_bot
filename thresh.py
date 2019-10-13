@@ -28,6 +28,8 @@ class ScreenPixel(object):
     # [ScreenPixel Globals]:
     _data = None
     _numpy = None
+    _width = None
+    _height = None
     _thresh_cnt = 0
 
     # [Threshold Presets]:
@@ -51,15 +53,15 @@ class ScreenPixel(object):
         self._data = CG.CGDataProviderCopyData(prov)
 
         # [Get width/height of image]:
-        self.width = CG.CGImageGetWidth(image)
-        self.height = CG.CGImageGetHeight(image)
+        self._width = CG.CGImageGetWidth(image)
+        self._height = CG.CGImageGetHeight(image)
         self.get_numpy()
 
         #imageio.imwrite('screen.png', self._numpy)
 
     def get_numpy(self):
         imgdata=numpy.frombuffer(self._data,dtype=numpy.uint8).reshape(int(len(self._data)/4),4)
-        _numpy_bgr = imgdata[:self.width*self.height,:-1].reshape(self.height,self.width,3)
+        _numpy_bgr = imgdata[:self._width*self._height,:-1].reshape(self._height,self._width,3)
         _numpy_rgb = _numpy_bgr[...,::-1]
         self._numpy = _numpy_rgb
 
@@ -91,16 +93,16 @@ class ScreenPixel(object):
 
         # [Correct out-of-bounds Top]:
         top_start = top
-        if (top_start+square_width) > self.height:
-            top_start = self.height-square_width
+        if (top_start+square_width) > self._height:
+            top_start = self._height-square_width
         if top_start < 0:
             top_start = 0
         top_stop = (top_start+square_width)
 
         # [Correct out-of-bounds Left]:
         left_start = left
-        if (left_start+square_width) > self.width:
-            left_start = self.width-square_width
+        if (left_start+square_width) > self._width:
+            left_start = self._width-square_width
         if left_start < 0:
             left_start = 0
         left_stop = (left_start+square_width)
@@ -279,7 +281,6 @@ class ScreenPixel(object):
 class bobber_bot():
     # [BobberBot Globals]:
     _miss_cnt = 0
-    _mouse_mode = False # Mouse Mode
     _timer_start = None
     _timer_elapsed = 30
     _bobber_reset = False
@@ -289,6 +290,10 @@ class bobber_bot():
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
+
+    # [BobberBot Settings]:
+    _mouse_mode = True # Mouse Mode
+    _use_baubles = False
 
     # [Included Classes]:
     sp = None
@@ -303,15 +308,17 @@ class bobber_bot():
         self._splash_detected = False
 
         # [Check to apply bauble]:
-        self.bauble_check()
+        if self._use_baubles==True:
+            self.bauble_check()
 
         print('[casting_pole: {0}]'.format(note))
         self._timer_start = time.time()
 
         # [Use Fishing skill]:
         if self._mouse_mode == True:
-            pyautogui.moveTo(self._fishing_skill_loc.get('x'), self._fishing_skill_loc.get('y'), duration=1)
-            pyautogui.leftClick(x=None, y=None)
+            time.sleep(2) # Delay so not to cause `Internal Bag Error` when using Mouse Mode
+            pyautogui.click(x=self._fishing_skill_loc.get('x'), y=self._fishing_skill_loc.get('y'), button='left', clicks=1)
+            pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25) # Can (probably) disable after I figure out what is going on with double-clicking?
         else:
             pyautogui.typewrite('8')
 
@@ -323,12 +330,13 @@ class bobber_bot():
             #print('[casting_bauble]')
             if self._mouse_mode == True:
                 # [Click Fishing bauble]:
-                pyautogui.moveTo(self._fishing_bauble_loc.get('x'), self._fishing_bauble_loc.get('y'), duration=1)
-                pyautogui.leftClick(x=None, y=None)
+                pyautogui.click(x=self._fishing_bauble_loc.get('x'), y=self._fishing_bauble_loc.get('y'), button='left', clicks=1)
 
                 # [Click Fishing pole]:
-                pyautogui.moveTo(self._fishing_pole_loc.get('x'), self._fishing_pole_loc.get('y'), duration=1)
-                pyautogui.leftClick(x=None, y=None)
+                pyautogui.click(x=self._fishing_pole_loc.get('x'), y=self._fishing_pole_loc.get('y'), button='left', clicks=1)
+
+                # [Move mouse to center of the screen]:
+                pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25) # Can (probably) disable after I figure out what is going on with double-clicking?
             else:
                 pyautogui.typewrite('9') # fishing bauble on toolbar
                 pyautogui.typewrite('7') # fishing pole on toolbar
@@ -445,7 +453,6 @@ class bobber_bot():
 
     # [Listen for sound of the bobber splash]:
     def listen_splash(self, threshold=1500):
-        #CHUNK = 2**11
         CHUNK = 2048
         RATE = 44100
 
@@ -465,6 +472,7 @@ class bobber_bot():
                 #print('[SPLASH DETECTED!]: {0} / {1}'.format(peak, threshold))
                 pyautogui.rightClick(x=None, y=None)
                 self._splash_detected = True
+                self._miss_cnt = 0
                 return 1 # Return to main loop to recast pole
 
             self._timer_elapsed = (time.time() - self._timer_start)
@@ -493,9 +501,9 @@ class bobber_bot():
             self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
-        print('_fishing_pole_loc: {0}'.format(self._fishing_pole_loc))
-        print('_fishing_skill_loc: {0}'.format(self._fishing_skill_loc))
-        print('_fishing_bauble_loc: {0}'.format(self._fishing_bauble_loc))
+        #print('_fishing_pole_loc: {0}'.format(self._fishing_pole_loc))
+        #print('_fishing_skill_loc: {0}'.format(self._fishing_skill_loc))
+        #print('_fishing_bauble_loc: {0}'.format(self._fishing_bauble_loc))
 
 
 class mouse_calibrator(PyMouseEvent):
