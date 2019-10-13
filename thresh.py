@@ -309,7 +309,7 @@ class bobber_bot():
         self._timer_start = time.time()
 
         # [Use Fishing skill]:
-        if _mouse_mode == True:
+        if self._mouse_mode == True:
             pyautogui.moveTo(self._fishing_skill_loc.get('x'), self._fishing_skill_loc.get('y'), duration=1)
             pyautogui.leftClick(x=None, y=None)
         else:
@@ -321,7 +321,7 @@ class bobber_bot():
     def bauble_check(self):
         if self._bauble_elapsed >= 630: # 10min (and 30secs)
             #print('[casting_bauble]')
-            if _mouse_mode == True:
+            if self._mouse_mode == True:
                 # [Click Fishing bauble]:
                 pyautogui.moveTo(self._fishing_bauble_loc.get('x'), self._fishing_bauble_loc.get('y'), duration=1)
                 pyautogui.leftClick(x=None, y=None)
@@ -480,74 +480,82 @@ class bobber_bot():
         else:
             _use_calibrate_config = False
 
-        if _use_calibrate_config == True:
-            _calibrate_good = True
-        else:
-            # [Calibrate mouse _coords for each action bar item]:
-            action_bar = ['fishing_pole', 'fishing_skill', 'fishing_bauble']
-            for action_item in action_bar:
-                mc = mouse_calibrator(action_item)
-                print('[Calibrating {0} toolbar location! Alt-tab and go left-click it!]'.format(action_item))
-                print('[Right-Click after you have clicked the skill to save the location, and come back here!]') 
-                mc.run()
-            _calibrate_good = True
+        # [Calibrate mouse _coords for each action bar item used]:
+        if _use_calibrate_config == False:
+            mc = mouse_calibrator()
+            mc.run()
 
         # [Load config file into globals]:
-        if _calibrate_good == True:
-            with open(config_filename) as config_file:
-                configs = json.load(config_file)
-                self._fishing_pole_loc = configs['fishing_pole']
-                self._fishing_skill_loc = configs['fishing_skill']
-                self._fishing_bauble_loc = configs['fishing_bauble']
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+            self._fishing_pole_loc = configs['fishing_pole']
+            self._fishing_skill_loc = configs['fishing_skill']
+            self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
+        print('_fishing_pole_loc: {0}'.format(self._fishing_pole_loc))
+        print('_fishing_skill_loc: {0}'.format(self._fishing_skill_loc))
+        print('_fishing_bauble_loc: {0}'.format(self._fishing_bauble_loc))
 
 
 class mouse_calibrator(PyMouseEvent):
     _click_cnt = 0
     action_loc = None
     action_name = None
+    _fishing_pole_loc = None
+    _fishing_skill_loc = None
+    _fishing_bauble_loc = None
+    _calibrating = False
 
-    def __init__(self, action_item):
+    def __init__(self):
         PyMouseEvent.__init__(self)
-        self.action_name = action_item
+        print('[Calibrating fishing_pole toolbar location! Alt-tab, go left-click it && come back here!]')
+        self._calibrating = True
+
+    def save_calibration(self):
+        # [Load up current configs]:
+        config_filename = 'config_mouse_toolbar.json'
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+
+        # [Update config for locations]:
+        configs.update(self._fishing_pole_loc)
+        configs.update(self._fishing_skill_loc)
+        configs.update(self._fishing_bauble_loc)
+
+        # [Save values back to config file to update values]:
+        with open(config_filename, 'w') as fp:
+            json.dump(configs, fp)
+
+        self.stop()
 
     def click(self, x, y, button, press):
         int_x = int(x)
         int_y = int(y)
 
-        # [Left click to get X,Y _coords]:
-        if button==1 and press==True:
-            self.action_loc = {self.action_name : { "x":int_x, "y":int_y }}
-            print(self.action_loc)
-            self._click_cnt+=1
-
-        # [Right click to save config]:
-        if button==2 and press==True and self._click_cnt>0:
-            config_filename = 'config_mouse_toolbar.json'
-            with open(config_filename) as config_file:
-                configs = json.load(config_file)
-
-            # [Update config for action_item]:
-            configs.update(self.action_loc)
-
-            # [Save back to config file to update values]:
-            with open(config_filename, 'w') as fp:
-                json.dump(configs, fp)
-
-            print('[Saving config for {0}!]')
-            self.stop()
-
+        if button==1 and press and self._calibrating == True:
+            if self._fishing_pole_loc == None:
+                self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
+                print(self._fishing_pole_loc)
+                print('[Calibrating fishing_skill toolbar location! Alt-tab, go left-click it && come back here!]')
+            elif self._fishing_skill_loc == None:
+                self._fishing_skill_loc = {"fishing_skill" : { "x":int_x, "y":int_y }}
+                print(self._fishing_skill_loc)
+                print('[Calibrating fishing_bauble toolbar location! Alt-tab, go left-click it && come back here!]')
+            elif self._fishing_bauble_loc == None:
+                self._fishing_bauble_loc = {"fishing_bauble" : { "x":int_x, "y":int_y }}
+                print(self._fishing_bauble_loc)
+                print('Click one more time for Good Luck!')
+            else:
+                print('[Ending Calibration]')
+                self._calibrating = False
+                self.save_calibration()
+                self.stop()
 
 #[1]: `Mouse Mode/Chatter bug`: Only use mouse/clicks for fishing, rather than keyboard so that you can still type/talk while the bot is going. :3
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 if __name__ == '__main__':
-    #sp = ScreenPixel()
-    #bobber_bot(sp).start()
-    #print('[fin.]')
-
     sp = ScreenPixel()
-    bb = bobber_bot(sp)
-    bb.calibrate_mouse_toolbar()
-    #print('[fin.]')
+    bobber_bot(sp).start()
+    print('[fin.]')

@@ -1,5 +1,1 @@
-{
-  "fishing_pole"   : { "x":10, "y":10 },
-  "fishing_skill"  : { "x":10, "y":10 },
-  "fishing_bauble" : { "x":10, "y":10 }
-}
+{"fishing_pole": {"x": 324, "y": 425}, "fishing_skill": {"x": 521, "y": 409}, "fishing_bauble": {"x": 715, "y": 400}}
