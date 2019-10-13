@@ -22,15 +22,15 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 > Used to figure out the indexes/threshold if the preset ones dont work for you!
 
 
-# [AT THE MOMENT]: 
+# [AT THE MOMENT]:
 > The bot will cast `Baubles from "9"` onto `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
 > ^(Optionally you can enable `_mouse_mode=True` to only use the mouse for fishing actions and it will walk you through calibration -- allowing you to type to your guild, etc, if you are a chatter-bug like me =3)
 
-> It will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
+> The bot will start listening when started. This is the main loop -- when a SPLASH is detected, it will try to catch/recast 
+
+> The bot will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
 
 > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
-
-> Once the bobber is found it enters a ~25 second loop where it's listening for the SPLASH sound using a volume threshold.
 
 
 # [Python3 re-write]:

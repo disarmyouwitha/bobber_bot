@@ -9,7 +9,7 @@ import imageio
 import pyautogui
 import playsound
 import contextlib
-from pymouse import PyMouseEvent # For Calibrating MouseMode(?)
+from pymouse import PyMouseEvent
 import Quartz.CoreGraphics as CG
 
 pyautogui.PAUSE = 0
@@ -278,38 +278,76 @@ class ScreenPixel(object):
         return nemo_masked
 
 
+# [Callback for splash detection!]:
+def audio_callback(in_data, frame_count, time_info, status):
+    data = numpy.frombuffer(in_data,dtype=numpy.int16)
+    peak=numpy.average(numpy.abs(data))*2
+
+    if peak > 10:
+        print(peak)
+
+    if peak > bb._audio_threshold:
+        print('[SPLASH DETECTED!]: {0} / {1}'.format(peak, bb._audio_threshold))
+        # [If Splash detected, and bobber found, right-click bobber]:
+        if bb._bobber_found != False:
+            pyautogui.rightClick(x=None, y=None)
+            bb._splash_detected = True
+            bb._bobber_found = False
+            bb._miss_cnt = 0
+        else:
+            # [If no bobber found, recast pole]:
+            bb.cast_pole('splash_no_bobber')
+
+    bb._timer_elapsed = (time.time() - bb._timer_start) # incase we get stuck listening to something (?)
+
+    return data, pyaudio.paContinue
+
+
 class bobber_bot():
     # [BobberBot Globals]:
     _miss_cnt = 0
-    _timer_start = None
+    _count_cnt = 0
+    _timer_start = 0
     _timer_elapsed = 30
-    _bobber_reset = False
+    _audio_stream = None
     _bauble_start = None
     _bauble_elapsed = 660
-    _splash_detected = False
+    _bobber_reset = False
+    _bobber_found = False
+    _audio_threshold = 1500
+    _splash_detected = True   
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
 
     # [BobberBot Settings]:
-    _mouse_mode = True # Mouse Mode
-    _use_baubles = False
+    _mouse_mode = False # Mouse Mode
+    _use_baubles = True
 
     # [Included Classes]:
     sp = None
     pa = None
 
-    def __init__(self, screen_pixel):
-        self.sp = screen_pixel
+    def __init__(self):
+        self.sp = ScreenPixel()
         self.pa = pyaudio.PyAudio()
+        self.setup_audio()
+
+    def setup_audio(self):
+        dev_idx = 0 # Microphone as input
+        dev_idx = 2 # Speakers as input
+        if dev_idx > 0:
+            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+        else:
+            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, stream_callback=audio_callback)
 
     def cast_pole(self, note=''):
-        self._timer_elapsed = 0
-        self._splash_detected = False
-
         # [Check to apply bauble]:
         if self._use_baubles==True:
             self.bauble_check()
+
+        self._timer_elapsed = 0
+        self._splash_detected = False
 
         print('[casting_pole: {0}]'.format(note))
         self._timer_start = time.time()
@@ -318,7 +356,7 @@ class bobber_bot():
         if self._mouse_mode == True:
             time.sleep(2) # Delay so not to cause `Internal Bag Error` when using Mouse Mode
             pyautogui.click(x=self._fishing_skill_loc.get('x'), y=self._fishing_skill_loc.get('y'), button='left', clicks=1)
-            pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25) # Can (probably) disable after I figure out what is going on with double-clicking?
+            pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25)
         else:
             pyautogui.typewrite('8')
 
@@ -326,6 +364,8 @@ class bobber_bot():
         self._bobber_reset=True
 
     def bauble_check(self):
+        if self._splash_detected == True:
+            time.sleep(2) # If we caught a fish, a small delay before trying to apply bauble to make sure we aren't interrupted
         if self._bauble_elapsed >= 630: # 10min (and 30secs)
             #print('[casting_bauble]')
             if self._mouse_mode == True:
@@ -336,7 +376,7 @@ class bobber_bot():
                 pyautogui.click(x=self._fishing_pole_loc.get('x'), y=self._fishing_pole_loc.get('y'), button='left', clicks=1)
 
                 # [Move mouse to center of the screen]:
-                pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25) # Can (probably) disable after I figure out what is going on with double-clicking?
+                pyautogui.moveTo((self.sp._width/2/2), (self.sp._height/2/2), duration=.25)
             else:
                 pyautogui.typewrite('9') # fishing bauble on toolbar
                 pyautogui.typewrite('7') # fishing pole on toolbar
@@ -358,7 +398,10 @@ class bobber_bot():
         time.sleep(3)
 
         print('[BobberBot Started]')
-        while True:
+        self._timer_start = time.time()
+        self._audio_stream.start_stream()
+
+        while self._audio_stream.is_active():
             try:
                 # [Start Fishing / 30sec fishing timer]:
                 if self._timer_elapsed >= 30 or self._splash_detected:
@@ -377,14 +420,27 @@ class bobber_bot():
                 # [Try to locate the bobber]:
                 _bobber_coords = self.find_bobber()
                 if _bobber_coords != 0:
+                    self._bobber_found = _bobber_coords
                     #self.track_bobber(_bobber_coords) # Track bobber for 30seconds, taking screenshots
-                    self.listen_splash()
 
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
                 print('[Bye]')
+
+                # [Stop Audio Stream]:
+                self._audio_stream.stop_stream()
+                self._audio_stream.close()
+                self.pa.terminate()
+
+                # [Die Young, Leave beautiful code]:
                 sys.exit(1)
-                continue
+
+            #time.sleep(0.1)
+
+        # [Stop Audio Stream]:
+        self._audio_stream.stop_stream()
+        self._audio_stream.close()
+        self.pa.terminate()
 
     # [Iterates over HSV threshold of screengrab to try and locate the bobber]:
     def find_bobber(self):
@@ -406,6 +462,13 @@ class bobber_bot():
                         if self._timer_elapsed >= 30:
                             return 1
                         else:
+                            if self._count_cnt != None:
+                                if self._count_cnt > 10:
+                                    self._count_cnt = None
+                                    return 2
+                                else:
+                                    self._count_cnt+=1
+
                             self._timer_elapsed = (time.time() - self._timer_start)
 
                 # [Check for exit conditions]:
@@ -439,7 +502,6 @@ class bobber_bot():
                 _tooltip_check+=1
 
         if _tooltip_check >= 1:
-            #print('[FOUND IT!]: {0} | {1}'.format(_tooltip_check, _coords))
             return _coords
 
         return 0
@@ -450,33 +512,6 @@ class bobber_bot():
             self.sp.capture()
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
             self._timer_elapsed = (time.time() - self._timer_start)
-
-    # [Listen for sound of the bobber splash]:
-    def listen_splash(self, threshold=1500):
-        CHUNK = 2048
-        RATE = 44100
-
-        #dev_idx = 0 # Microphone as input
-        dev_idx = 2 # Speakers as input
-        if dev_idx > 0:
-            stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, input_device_index=dev_idx, frames_per_buffer=CHUNK)
-        else:
-            stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
-
-        self._splash_detected = False
-        while self._timer_elapsed < 30 and self._splash_detected==False:
-            data = numpy.frombuffer(stream.read(CHUNK),dtype=numpy.int16)
-            peak=numpy.average(numpy.abs(data))*2
-
-            if peak > threshold:
-                #print('[SPLASH DETECTED!]: {0} / {1}'.format(peak, threshold))
-                pyautogui.rightClick(x=None, y=None)
-                self._splash_detected = True
-                self._miss_cnt = 0
-                return 1 # Return to main loop to recast pole
-
-            self._timer_elapsed = (time.time() - self._timer_start)
-        return 0
 
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_toolbar(self):
@@ -501,9 +536,6 @@ class bobber_bot():
             self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
-        #print('_fishing_pole_loc: {0}'.format(self._fishing_pole_loc))
-        #print('_fishing_skill_loc: {0}'.format(self._fishing_skill_loc))
-        #print('_fishing_bauble_loc: {0}'.format(self._fishing_bauble_loc))
 
 
 class mouse_calibrator(PyMouseEvent):
@@ -560,10 +592,11 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_calibration()
                 self.stop()
 
-#[1]: `Mouse Mode/Chatter bug`: Only use mouse/clicks for fishing, rather than keyboard so that you can still type/talk while the bot is going. :3
+
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
+bb = bobber_bot()
 if __name__ == '__main__':
-    sp = ScreenPixel()
-    bobber_bot(sp).start()
+    #bb = bobber_bot()
+    bb.start()
     print('[fin.]')
