@@ -33,24 +33,25 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
 
 
-# [Python3 re-write]:
-> brew install python3 # If you need python
+# [Python3 modules used]:
+> brew install python3
 
 > brew install portaudio
 
-> python3 -m pip install pyaudio
+> python3 -m pip install mss # For Windows implementation
+> ^(OSX uses Quartz for a lower level hook): capture_osx: 18.55ms ~vs~ capture_mss: 34.84ms 
 
 > python3 -m pip install imageio
+
+> python3 -m pip install pyaudio
+
+> python3 -m pip install playsound
 
 > python3 -m pip install pyautogui
 
 > python3 -m pip install PyUserInput
 
-> python3 -m pip install playsound
-
 > python3 -m pip install opencv-python
-
-> #python3 -m pip install mss # Not yet =]
 
 > https://github.com/mattingalls/Soundflower  **Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
 > https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg

@@ -1,7 +1,6 @@
 import os
 import sys
 import cv2
-import mss
 import json
 import time
 import numpy
@@ -11,9 +10,14 @@ import pyautogui
 import playsound
 import contextlib
 from pymouse import PyMouseEvent
-import Quartz.CoreGraphics as CG
 
-_dev = True
+# [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
+if sys.platform == 'darwin':
+    import Quartz.CoreGraphics as CG
+else:
+    import mss
+
+_dev = False
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -43,6 +47,12 @@ class ScreenPixel(object):
     splash_upper_hsv = numpy.array([255,255,255])
 
     def capture(self):
+        if sys.platform == 'darwin':
+            self.capture_osx()
+        else:
+            self.capture_mss()
+
+    def capture_osx(self):
         region = CG.CGRectInfinite
 
         # [Create screenshot as CGImage]:
@@ -57,30 +67,29 @@ class ScreenPixel(object):
         # [Get width/height of image]:
         self._width = CG.CGImageGetWidth(image)
         self._height = CG.CGImageGetHeight(image)
-        self.get_numpy()
-        #imageio.imwrite('screen.png', self._numpy)
 
-    def capture_mss(self):
-        print('Woomy!')
-
-        # The simplest use, save a screen shot of the 1st monitor
-        with mss.mss() as sct:
-            sct.shot()
-
-             # Part of the screen to capture
-            monitor = {"top": 40, "left": 0, "width": 800, "height": 640}
-
-            # Get raw pixels from the screen, save it to a Numpy array
-            #img = numpy.array(sct.grab(monitor))
-            self._numpy = numpy.array(sct.grab(monitor))
-
-        imageio.imwrite('screen_mss.png', self._numpy)
-
-    def get_numpy(self):
+        # [Get raw pixels from the screen, save it to a Numpy array as RGB]:
         imgdata=numpy.frombuffer(self._data,dtype=numpy.uint8).reshape(int(len(self._data)/4),4)
         _numpy_bgr = imgdata[:self._width*self._height,:-1].reshape(self._height,self._width,3)
         _numpy_rgb = _numpy_bgr[...,::-1]
         self._numpy = _numpy_rgb
+        #imageio.imwrite('screen.png', self._numpy)
+
+    def capture_mss(self):
+        with mss.mss() as sct:
+            # [Capture Part of the screen -- NEAT!]:
+            #monitor = { "top": 100, "left": 100, "width": 160, "height": 135, "mon": 0 }
+
+            # [Equivalent to CG.CGRectInfinite]:
+            monitor = sct.monitors[0] #0: All | 1: first | 2: second
+            self._width = monitor['width']
+            self._height = monitor['height']
+
+            # [Get raw pixels from the screen, save it to a Numpy array as RGB]:
+            _numpy_bgr = numpy.array(sct.grab(monitor)) #sct.grab()
+            _numpy_rgb = cv2.cvtColor(_numpy_bgr, cv2.COLOR_BGR2RGB)
+            self._numpy = _numpy_rgb
+            #imageio.imwrite('screen_mss.png', self._numpy)
 
     def resize_image(self, nemo, scale_percent=50):
         width = int(nemo.shape[1] * scale_percent / 100)
@@ -641,9 +650,4 @@ if __name__ == '__main__':
         bb.sell_fish('Stuart Fleming')
     else:
         # [Dev. testing stuff]:
-
-        # [Cross-platform Implementation]:
-        with timer('capture_mss'):
-            bb.sp.capture_mss()
-        # ^(Compare vs. cv2 screenshot)
-        # ^(Compare vs. ScreenPixel.captuer() to see how much faster OSX implementation is?)
+        print('Woomy!')

@@ -1,6 +1,5 @@
 #[0]: Windows implementation of capture()
     > https://pypi.org/project/mss/ (?)
-    > Should not be too hard to write -- since we aren't taking a lot of screen grabs, and MSS is *super fast*
 
 #[1]: Re-write configs to use JSON
 
