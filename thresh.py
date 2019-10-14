@@ -10,7 +10,6 @@ import pyautogui
 import playsound
 import contextlib
 from pymouse import PyMouseEvent
-
 # [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
 if sys.platform == 'darwin':
     import Quartz.CoreGraphics as CG
@@ -20,6 +19,7 @@ else:
 _dev = False
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
+
 
 # [Neat helper function for timing operations!]:
 @contextlib.contextmanager
@@ -113,7 +113,7 @@ class ScreenPixel(object):
         left = (left*mod)
         square_width = square_width*mod
 
-        if center==True:
+        if center:
             top = top-(square_width/2)
             left = left-(square_width/2)
 
@@ -151,7 +151,7 @@ class ScreenPixel(object):
             _use_calibrate_config = False
 
         # [Set HSV mask from configs]:
-        if _use_calibrate_config == True:
+        if _use_calibrate_config:
             with open(config_filename, 'r') as f:
                 config = f.read().split('\n')
                 lower_hsv = numpy.array([int(config[0]), int(config[1]), int(config[2])])
@@ -244,13 +244,13 @@ class ScreenPixel(object):
                 _calibrate_good = input('[Calibration Good? Ready? (y/n)]: ')
                 _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
 
-            if _calibrate_good == True:
+            if _calibrate_good:
                 # [Save Calibration image]: (Great for setup debug)
                 mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
                 imageio.imwrite('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
                 self._thresh_cnt+=1
 
-            if _calibrate_good == True and _use_calibrate_config == False:
+            if _calibrate_good and _use_calibrate_config == False:
                 # [Delete old config file]:
                 if os.path.isfile(config_filename):
                     os.remove(config_filename)
@@ -268,7 +268,7 @@ class ScreenPixel(object):
                     f.write('{0}'.format(uv))   #upper_value
 
         # [Update Globals]:
-        if _calibrate_good == True:
+        if _calibrate_good:
             if screen=='bobber':
                 self.bobber_lower_hsv = lower_hsv
                 self.bobber_upper_hsv = upper_hsv
@@ -315,7 +315,7 @@ def audio_callback(in_data, frame_count, time_info, status):
             bb._splash_detected = True
 
             if bb._timer_start is not None:
-                if bb._bobber_found == True:
+                if bb._bobber_found:
                     #print('Splash detected, with bobber: {0}'.format(peak))
                     self._catch_cnt+=1
                 else:
@@ -344,6 +344,7 @@ class bobber_bot():
     _miss_cnt = 0
     _catch_cnt = 0
     _count_cnt = 0
+    _fishing = True
     _timeout_cnt = 0
     _timer_start = None
     _timer_elapsed = 30
@@ -362,6 +363,7 @@ class bobber_bot():
     _use_baubles = True
     _use_auto_sell = False
     _use_mouse_mode = False
+    _use_chatty_mode = False
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -378,14 +380,20 @@ class bobber_bot():
 
     def cast_pole(self):
         # [Check to apply bauble]:
-        if self._use_baubles==True:
+        if self._use_baubles:
             self.bauble_check()
+
+        # [Check to see if we should sell fish]:
+        if self._use_auto_sell:
+            # [Until we are able to determine when bags are full]:
+            if self._catch_cnt > 600:
+                self.sell_fish('Stuart Fleming')
 
         self._timer_elapsed = 0
         self._timer_start = time.time()
 
         # [Use Fishing skill]:
-        if self._use_mouse_mode == True:
+        if self._use_mouse_mode:
             time.sleep(2)
             pyautogui.click(x=self._fishing_skill_loc.get('x'), y=self._fishing_skill_loc.get('y'), button='left', clicks=1)
         else:
@@ -397,14 +405,12 @@ class bobber_bot():
         self._splash_detected = False
 
     def bauble_check(self):
-        if self._splash_detected == True:
+        if self._splash_detected:
             time.sleep(2) # If we caught a fish, a small delay before trying to apply bauble to make sure we aren't interrupted
         if self._bauble_elapsed >= 630: # 10min (and 30secs)
-            #print('[casting_bauble]')
-            if self._use_mouse_mode == True:
+            if self._use_mouse_mode:
                 # [Click Fishing bauble]:
                 pyautogui.click(x=self._fishing_bauble_loc.get('x'), y=self._fishing_bauble_loc.get('y'), button='left', clicks=1)
-
                 # [Click Fishing pole]:
                 pyautogui.click(x=self._fishing_pole_loc.get('x'), y=self._fishing_pole_loc.get('y'), button='left', clicks=1)
             else:
@@ -421,14 +427,18 @@ class bobber_bot():
         self.sp.calibrate_image(screen='bobber')
         self.sp.calibrate_image(screen='tooltip_square')
 
-        if self._use_mouse_mode == True:
+        if self._use_mouse_mode:
             self.calibrate_mouse_toolbar()
 
         self._timer_start = time.time()
         input('[Enter to start bot!]: (3sec delay)')
         time.sleep(3)
 
-        print('[BobberBot Started]')
+        if self._use_chatty_mode:
+            self.ghost_chat('[Selling Fish in 3sec!]')
+        else:
+            print('[BobberBot Started]')
+
         playsound.playsound('audio/sms_alert.mp3')
         self._audio_stream.start_stream()
 
@@ -442,12 +452,9 @@ class bobber_bot():
                         self._timeout_cnt = 0
                     elif self._splash_detected == False and self._timer_start is not None:
                         self._timeout_cnt+=1
-                        #print('[Miss Count: {0}]: timer_elapsed: {1}'.format(self._timeout_cnt, self._timer_elapsed))
-
                         if self._timeout_cnt >= 20:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
                             sys.exit(1)
-
                     self.cast_pole()
                 self._timer_elapsed = (time.time() - self._timer_start)
 
@@ -505,9 +512,9 @@ class bobber_bot():
                         self._timer_elapsed = (time.time() - self._timer_start)
 
                 # [Check for exit conditions]:
-                if self._bobber_reset==True:
+                if self._bobber_reset:
                     break
-            if self._bobber_reset==True:
+            if self._bobber_reset:
                 break
         return 0
 
@@ -572,18 +579,29 @@ class bobber_bot():
 
     # [Bind `Interact Vendor` to `\` key]:
     def sell_fish(self, vendor_name):
-        print('[Selling Fish in 3sec!]')
+        if self._use_chatty_mode:
+            self.ghost_chat('[Selling Fish in 3sec!]')
+        else:
+            print('[Selling Fish in 3sec!]')
         time.sleep(3)
+
+        # [Target vendor and use `\` to interact with them]: (AutoVendor addon does the rest of the magic)
         self.chat_command('/target {0}'.format(vendor_name))
         pyautogui.press('\\') # Interact Vendor keybind
         time.sleep(3)
         pyautogui.press('esc')
 
     def chat_command(self, cmd):
-        pyautogui.press('enter') # 
+        pyautogui.press('enter')
         pyautogui.typewrite(cmd)
         pyautogui.press('enter')
 
+    # [Ghost Chat to only type/not send message]: (Optionally could create/specify a channel to talk into?)
+    def ghost_chat(self, cmd):
+        pyautogui.press('enter')
+        pyautogui.typewrite(cmd)
+        time.sleep(2) # Delay to read
+        pyautogui.press('esc')
 
 class mouse_calibrator(PyMouseEvent):
     _click_cnt = 0
@@ -596,8 +614,9 @@ class mouse_calibrator(PyMouseEvent):
 
     def __init__(self):
         PyMouseEvent.__init__(self)
-        print('[Calibrating fishing_pole toolbar location! Alt-tab, go left-click it && come back here!]')
-        self._calibrating = True
+        if _dev==False:
+            print('[Calibrating fishing_pole toolbar location! Alt-tab, go left-click it && come back here!]')
+            self._calibrating = True
 
     def save_calibration(self):
         # [Load up current configs]:
@@ -620,7 +639,7 @@ class mouse_calibrator(PyMouseEvent):
         int_x = int(x)
         int_y = int(y)
 
-        if button==1 and press and self._calibrating == True:
+        if button==1 and press and self._calibrating and _dev==False:
             if self._fishing_pole_loc == None:
                 self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
                 print(self._fishing_pole_loc)
@@ -639,15 +658,20 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_calibration()
                 self.stop()
 
+        # [Mouse-override for `_dev` testing]:
+        if button==1 and press and _dev==True:
+            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
 
-# def capture_mss(self):
-#[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
+
+# Hide UI (ALT + Z)
 bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
-        print('[fin.]')
         bb.sell_fish('Stuart Fleming')
     else:
-        # [Dev. testing stuff]:
-        print('Woomy!')
+        print('[_dev testing]:')
+        #mc = mouse_calibrator()
+        #mc.run()
+        
+print('[fin.]')

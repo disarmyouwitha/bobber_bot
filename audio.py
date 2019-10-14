@@ -20,11 +20,15 @@ def detect_devices():
 
     # iterate between devices:
     for i in range(0, device_count):
-        print(i)
+        print('dev_idx: {0}'.format(i))
         device = p.get_device_info_by_host_api_device_index(0, i)
         devices.append(device['name'])
-        print(p.get_device_info_by_host_api_device_index(0, 1))
+        print(p.get_device_info_by_host_api_device_index(0, i))
         print('-------')
+
+    print()
+    print('[Now go set `dev_idx` to Soundflower/Mixer && uncomment `listen_splash(2000)` to check that the program "hears" your speaker output]')
+    print()
 
 def listen_splash(threshold):
     _timer_elapsed = 0
@@ -34,7 +38,7 @@ def listen_splash(threshold):
     RATE = 44100
     p = pyaudio.PyAudio()
 
-    dev_idx = 0 # Microphone as input
+    #dev_idx = 0 # Microphone as input
     dev_idx = 2 # Speakers as input
     if dev_idx > 0:
         print('[Listening| Go cast your pole in WOW and see if it detects the sound of the splash]')
@@ -64,6 +68,8 @@ def listen_splash(threshold):
 
 
 if __name__ == '__main__':
-    detect_devices()    # Display device index / device info for all devices found.
-    listen_splash(2000) # Threshold goes here | You may need to adjust the index from detect devices^
-    print('[fin].')
+    #[0]: Display device index / device info for all devices found.
+    detect_devices()
+
+    #[1]: Threshold goes here | You may need to adjust the index from detect devices^
+    #listen_splash(2000) 

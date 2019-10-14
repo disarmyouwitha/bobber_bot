@@ -1,5 +1,5 @@
 # [bobber_bot]:
-WoW Classic fishing bot.. for OSX.. for funzies.
+WoW Classic fishing bot.. for OSX.. for funzies. (wrapping up cross-platform support meow)
 
 This bot is (more or less) finished now! I achieved pretty solid tracking once HSV threshold of the bobber / tooltip is configured~
 (The script will step you through configuration the first time it runs -- you want only the bobber/tooltip to be selected in white)
