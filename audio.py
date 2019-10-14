@@ -5,6 +5,8 @@ import pyaudio
 import numpy as np
 
 # https://github.com/mattingalls/Soundflower
+# https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
+# ^ (DMG for installing, definitely preferred)
 
 _timer_elapsed = 0
 _timer_start = time.time()

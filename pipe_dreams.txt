@@ -1,0 +1,20 @@
+#[0]: Windows implementation of capture()
+    > https://pypi.org/project/mss/ (?)
+    > Should not be too hard to write -- since we aren't taking a lot of screen grabs, and MSS is *super fast*
+
+#[1]: Re-write configs to use JSON
+
+#[2]: Try to restart on D/C?
+
+#[3]: Detect when bags are full / exit
+#[3]: Pause loop => /target Stuart Fleming + \ = Sell all trash => (delay?) Esc => start loop
+#[3]: Pause loop => Use Mailbox?
+
+#[4]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
+
+
+
+//-------
+#[Clear my gui]:
+#/bfw toggle
+#/raven (Uncheck `Enable Raven`)

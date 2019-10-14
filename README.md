@@ -7,7 +7,7 @@ I've been bringing in bag fulls of fish a night and just kicking back making imp
 
 I'm *pretty sure* this only works on OSX right now, however `ScreenPixel.capture()`  is the only function that I think would need to be re-written for Windows, as it's using optimized screen grab code for OSX right now. (Sorry Windows, yall got all the cool C hooks, so there is plenty of code you can use for this -- send me a Pull Request :P)
 
-The other thing that might throw things into upheaval is if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% resolution scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
+The other thing that might throw things into upheaval is if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% Render Scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
 
 One last note.. `listen_splash()` is using the speaker's output to detect the sound of the splash -- This takes some setup (with Soundflower on OSX) or by creating a Mixer on windows.. I will honestly have to do more research/post better steps for this later. 
 _If you don't want to use the speakers input, you can optionally use the mic from say, your macbook, but tbh I found this super annoying._
@@ -50,4 +50,8 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > python3 -m pip install opencv-python
 
-> *https://github.com/mattingalls/Soundflower* # Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
+> #python3 -m pip install mss # Not yet =]
+
+> https://github.com/mattingalls/Soundflower  **Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
+> https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
+> ^ (DMG for installing, definitely preferred)

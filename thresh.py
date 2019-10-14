@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import mss
 import json
 import time
 import numpy
@@ -12,6 +13,7 @@ import contextlib
 from pymouse import PyMouseEvent
 import Quartz.CoreGraphics as CG
 
+_dev = True
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -56,8 +58,23 @@ class ScreenPixel(object):
         self._width = CG.CGImageGetWidth(image)
         self._height = CG.CGImageGetHeight(image)
         self.get_numpy()
-
         #imageio.imwrite('screen.png', self._numpy)
+
+    def capture_mss(self):
+        print('Woomy!')
+
+        # The simplest use, save a screen shot of the 1st monitor
+        with mss.mss() as sct:
+            sct.shot()
+
+             # Part of the screen to capture
+            monitor = {"top": 40, "left": 0, "width": 800, "height": 640}
+
+            # Get raw pixels from the screen, save it to a Numpy array
+            #img = numpy.array(sct.grab(monitor))
+            self._numpy = numpy.array(sct.grab(monitor))
+
+        imageio.imwrite('screen_mss.png', self._numpy)
 
     def get_numpy(self):
         imgdata=numpy.frombuffer(self._data,dtype=numpy.uint8).reshape(int(len(self._data)/4),4)
@@ -117,7 +134,7 @@ class ScreenPixel(object):
     # [Display calibrate images to confirm they look good]:
     def calibrate_image(self, screen='bobber'):
         # [Check for config files]:
-        config_filename = 'config_{0}.txt'.format(screen)
+        config_filename = 'configs/config_{0}.txt'.format(screen)
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(screen))
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -288,11 +305,13 @@ def audio_callback(in_data, frame_count, time_info, status):
         if peak > bb._audio_threshold and bb._splash_detected==False:
             bb._splash_detected = True
 
-            #if bb._timer_start is not None:
-            #    if bb._bobber_found == True:
-            #        print('Splash detected, with bobber: {0}'.format(peak))
-            #    else:
-            #        print('Splash detected, no bobber: {0}'.format(peak))
+            if bb._timer_start is not None:
+                if bb._bobber_found == True:
+                    #print('Splash detected, with bobber: {0}'.format(peak))
+                    self._catch_cnt+=1
+                else:
+                    #print('Splash detected, no bobber: {0}'.format(peak))
+                    self._miss_cnt+=1
 
         return data, pyaudio.paContinue
 
@@ -308,9 +327,15 @@ def audio_callback(in_data, frame_count, time_info, status):
 
 
 class bobber_bot():
+    # [Included Classes]:
+    sp = None
+    pa = None
+
     # [BobberBot Globals]:
     _miss_cnt = 0
+    _catch_cnt = 0
     _count_cnt = 0
+    _timeout_cnt = 0
     _timer_start = None
     _timer_elapsed = 30
     _audio_stream = None
@@ -325,12 +350,9 @@ class bobber_bot():
     _fishing_bauble_loc = None
 
     # [BobberBot Settings]:
-    _mouse_mode = False # Mouse Mode
     _use_baubles = True
-
-    # [Included Classes]:
-    sp = None
-    pa = None
+    _use_auto_sell = False
+    _use_mouse_mode = False
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -354,7 +376,7 @@ class bobber_bot():
         self._timer_start = time.time()
 
         # [Use Fishing skill]:
-        if self._mouse_mode == True:
+        if self._use_mouse_mode == True:
             time.sleep(2)
             pyautogui.click(x=self._fishing_skill_loc.get('x'), y=self._fishing_skill_loc.get('y'), button='left', clicks=1)
         else:
@@ -370,7 +392,7 @@ class bobber_bot():
             time.sleep(2) # If we caught a fish, a small delay before trying to apply bauble to make sure we aren't interrupted
         if self._bauble_elapsed >= 630: # 10min (and 30secs)
             #print('[casting_bauble]')
-            if self._mouse_mode == True:
+            if self._use_mouse_mode == True:
                 # [Click Fishing bauble]:
                 pyautogui.click(x=self._fishing_bauble_loc.get('x'), y=self._fishing_bauble_loc.get('y'), button='left', clicks=1)
 
@@ -390,7 +412,7 @@ class bobber_bot():
         self.sp.calibrate_image(screen='bobber')
         self.sp.calibrate_image(screen='tooltip_square')
 
-        if self._mouse_mode == True:
+        if self._use_mouse_mode == True:
             self.calibrate_mouse_toolbar()
 
         self._timer_start = time.time()
@@ -408,13 +430,13 @@ class bobber_bot():
                     # [Right-click if splash is detected]:
                     if self._splash_detected:
                         pyautogui.rightClick(x=None, y=None)
-                        self._miss_cnt = 0
+                        self._timeout_cnt = 0
                     elif self._splash_detected == False and self._timer_start is not None:
-                        self._miss_cnt+=1
-                        #print('[Miss Count: {0}]: timer_elapsed: {1}'.format(self._miss_cnt, self._timer_elapsed))
+                        self._timeout_cnt+=1
+                        #print('[Miss Count: {0}]: timer_elapsed: {1}'.format(self._timeout_cnt, self._timer_elapsed))
 
-                        if self._miss_cnt >= 20:
-                            print('[WoW crashed? Miss Count: {0}]'.format(self._miss_cnt))
+                        if self._timeout_cnt >= 20:
+                            print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
                             sys.exit(1)
 
                     self.cast_pole()
@@ -518,7 +540,7 @@ class bobber_bot():
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_toolbar(self):
         # [Check for config files]:
-        config_filename = 'config_mouse_toolbar.json'
+        config_filename = 'configs/config_mouse_toolbar.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Calibration config found for mouse_toolbar | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -608,17 +630,20 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_calibration()
                 self.stop()
 
-#[0]: Try to restart on D/C?
-#[0]: Pause loop => /target Stuart Fleming + \ = Sell all trash => (delay?) Esc => start loop
-#[1]: Finish ^
+
+# def capture_mss(self):
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
-#[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 bb = bobber_bot()
 if __name__ == '__main__':
-    bb.start()
-    print('[fin.]')
+    if _dev==False:
+        bb.start()
+        print('[fin.]')
+        bb.sell_fish('Stuart Fleming')
+    else:
+        # [Dev. testing stuff]:
 
-    #bb.sell_fish('Stuart Fleming')
-
-#/bfw toggle
-#/raven (Uncheck `Enable Raven`)
+        # [Cross-platform Implementation]:
+        with timer('capture_mss'):
+            bb.sp.capture_mss()
+        # ^(Compare vs. cv2 screenshot)
+        # ^(Compare vs. ScreenPixel.captuer() to see how much faster OSX implementation is?)
