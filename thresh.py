@@ -288,6 +288,12 @@ def audio_callback(in_data, frame_count, time_info, status):
         if peak > bb._audio_threshold and bb._splash_detected==False:
             bb._splash_detected = True
 
+            #if bb._timer_start is not None:
+            #    if bb._bobber_found == True:
+            #        print('Splash detected, with bobber: {0}'.format(peak))
+            #    else:
+            #        print('Splash detected, no bobber: {0}'.format(peak))
+
         return data, pyaudio.paContinue
 
     except pyautogui.FailSafeException:
@@ -380,8 +386,6 @@ class bobber_bot():
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
     def start(self):
-        self._timer_start = time.time()
-
         # [Calibrate HSV for bobber/tooltip]:
         self.sp.calibrate_image(screen='bobber')
         self.sp.calibrate_image(screen='tooltip_square')
@@ -389,6 +393,7 @@ class bobber_bot():
         if self._mouse_mode == True:
             self.calibrate_mouse_toolbar()
 
+        self._timer_start = time.time()
         input('[Enter to start bot!]: (3sec delay)')
         time.sleep(3)
 
@@ -406,7 +411,7 @@ class bobber_bot():
                         self._miss_cnt = 0
                     elif self._splash_detected == False and self._timer_start is not None:
                         self._miss_cnt+=1
-                        print('[Miss Count: {0}]: timer_elapsed: {1}'.format(self._miss_cnt, self._timer_elapsed))
+                        #print('[Miss Count: {0}]: timer_elapsed: {1}'.format(self._miss_cnt, self._timer_elapsed))
 
                         if self._miss_cnt >= 20:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._miss_cnt))
@@ -534,6 +539,20 @@ class bobber_bot():
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
 
+    # [Bind `Interact Vendor` to `\` key]:
+    def sell_fish(self, vendor_name):
+        print('[Selling Fish in 3sec!]')
+        time.sleep(3)
+        self.chat_command('/target {0}'.format(vendor_name))
+        pyautogui.press('\\') # Interact Vendor keybind
+        time.sleep(3)
+        pyautogui.press('esc')
+
+    def chat_command(self, cmd):
+        pyautogui.press('enter') # 
+        pyautogui.typewrite(cmd)
+        pyautogui.press('enter')
+
 
 class mouse_calibrator(PyMouseEvent):
     _click_cnt = 0
@@ -589,11 +608,17 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_calibration()
                 self.stop()
 
-
+#[0]: Try to restart on D/C?
+#[0]: Pause loop => /target Stuart Fleming + \ = Sell all trash => (delay?) Esc => start loop
+#[1]: Finish ^
 #[2]: Windows implementation of capture() (?) https://pypi.org/project/mss/ (?)
 #[3]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 bb = bobber_bot()
 if __name__ == '__main__':
-    #bb = bobber_bot()
     bb.start()
     print('[fin.]')
+
+    #bb.sell_fish('Stuart Fleming')
+
+#/bfw toggle
+#/raven (Uncheck `Enable Raven`)
