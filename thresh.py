@@ -43,8 +43,6 @@ class ScreenPixel(object):
     bobber_upper_hsv = numpy.array([140,255,255])
     tooltip_lower_hsv = numpy.array([0,0,0])
     tooltip_upper_hsv = numpy.array([25,255,255])
-    splash_lower_hsv = numpy.array([0,0,0])
-    splash_upper_hsv = numpy.array([255,255,255])
 
     def capture(self):
         if sys.platform == 'darwin':
@@ -143,21 +141,28 @@ class ScreenPixel(object):
     # [Display calibrate images to confirm they look good]:
     def calibrate_image(self, screen='bobber'):
         # [Check for config files]:
-        config_filename = 'configs/config_{0}.txt'.format(screen)
+        config_filename = 'configs/config_bobber_tooltip.json'
         if os.path.isfile(config_filename):
-            _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(screen))
+            _use_calibrate_config = input('[Use calibration from config for {0}?]: '.format(screen))
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             _use_calibrate_config = False
 
         # [Set HSV mask from configs]:
         if _use_calibrate_config:
-            with open(config_filename, 'r') as f:
-                config = f.read().split('\n')
-                lower_hsv = numpy.array([int(config[0]), int(config[1]), int(config[2])])
-                upper_hsv = numpy.array([int(config[3]), int(config[4]), int(config[5])])
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+                if screen=='bobber':
+                    JSON_bobber_lower_hsv  = configs['bobber_lower_hsv']
+                    JSON_bobber_upper_hsv  = configs['bobber_upper_hsv']
+                    lower_hsv = numpy.array([JSON_bobber_lower_hsv.get('hue'), JSON_bobber_lower_hsv.get('saturation'), JSON_bobber_lower_hsv.get('value')])
+                    upper_hsv = numpy.array([JSON_bobber_upper_hsv.get('hue'), JSON_bobber_upper_hsv.get('saturation'), JSON_bobber_upper_hsv.get('value')])
+                elif screen=='tooltip':
+                    JSON_tooltip_lower_hsv = configs['tooltip_lower_hsv']
+                    JSON_tooltip_upper_hsv = configs['tooltip_upper_hsv']
+                    lower_hsv = numpy.array([JSON_tooltip_lower_hsv.get('hue'), JSON_tooltip_lower_hsv.get('saturation'), JSON_tooltip_lower_hsv.get('value')])
+                    upper_hsv = numpy.array([JSON_tooltip_upper_hsv.get('hue'), JSON_tooltip_upper_hsv.get('saturation'), JSON_tooltip_upper_hsv.get('value')])
             _calibrate_good = True
-            # [Take calibration threshold picture of bookeeping]:
             self.thresh_image(screen)
         else:
             input('[Calibrating {0} in 3sec!]:'.format(screen))
@@ -170,7 +175,7 @@ class ScreenPixel(object):
                 nemo = self.resize_image(nemo, scale_percent=50)
                 lower_hsv = self.bobber_lower_hsv
                 upper_hsv = self.bobber_upper_hsv
-            elif screen=='tooltip_square':
+            elif screen=='tooltip':
                 nemo = self.save_square(top=725,left=1300,square_width=100,mod=2,center=False)
                 lower_hsv = self.tooltip_lower_hsv
                 upper_hsv = self.tooltip_upper_hsv
@@ -213,8 +218,6 @@ class ScreenPixel(object):
             while True:
                 # [Threshold the HSV image]:
                 mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-                cv2.putText(mask,'Lower HSV: [' + str(lh) +',' + str(ls) + ',' + str(lv) + ']', (10,30), font, 0.5, (200,255,155), 1, cv2.LINE_AA)
-                cv2.putText(mask,'Upper HSV: [' + str(uh) +',' + str(us) + ',' + str(uv) + ']', (10,60), font, 0.5, (200,255,155), 1, cv2.LINE_AA)
                 cv2.imshow(window_name, mask)
 
                 # [Listen for ESC key]:
@@ -244,35 +247,41 @@ class ScreenPixel(object):
                 _calibrate_good = input('[Calibration Good? Ready? (y/n)]: ')
                 _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
 
+            # [Save Calibration image]: (Great for setup debug)
             if _calibrate_good:
-                # [Save Calibration image]: (Great for setup debug)
                 mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
                 imageio.imwrite('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
                 self._thresh_cnt+=1
 
+            # [Update config file]:
             if _calibrate_good and _use_calibrate_config == False:
-                # [Delete old config file]:
-                if os.path.isfile(config_filename):
-                    os.remove(config_filename)
-
                 (lh, ls, lv) = lower_hsv
                 (uh, us, uv) = upper_hsv
 
                 print('[Saving calibration to: {0}]'.format(config_filename))
-                with open(config_filename, 'w') as f:
-                    f.write('{0}\n'.format(lh)) #lower_hue
-                    f.write('{0}\n'.format(ls)) #lower_saturation
-                    f.write('{0}\n'.format(lv)) #lower_value
-                    f.write('{0}\n'.format(uh)) #upper_hue
-                    f.write('{0}\n'.format(us)) #upper_saturation
-                    f.write('{0}'.format(uv))   #upper_value
+
+                # [Load config file into local variables]:
+                with open(config_filename) as config_file:
+                    config = json.load(config_file)
+  
+                # [Update config for current calibration]:
+                if screen=='bobber':
+                    config.update({"bobber_lower_hsv": {"hue": int(lh), "saturation": int(ls), "value": int(lv)}})
+                    config.update({"bobber_upper_hsv": {"hue": int(uh), "saturation": int(us), "value": int(uv)}})
+                elif screen=='tooltip':
+                    config.update({"tooltip_lower_hsv": {"hue": int(lh), "saturation": int(ls), "value": int(lv)}})
+                    config.update({"tooltip_upper_hsv": {"hue": int(uh), "saturation": int(us), "value": int(uv)}})
+
+                # [Save values back to config file to update them]:
+                with open(config_filename, 'w') as fp:
+                    json.dump(config, fp)
 
         # [Update Globals]:
         if _calibrate_good:
             if screen=='bobber':
                 self.bobber_lower_hsv = lower_hsv
                 self.bobber_upper_hsv = upper_hsv
-            elif screen=='tooltip_square':
+            elif screen=='tooltip':
                 self.tooltip_lower_hsv = lower_hsv
                 self.tooltip_upper_hsv = upper_hsv
         else:
@@ -286,7 +295,7 @@ class ScreenPixel(object):
             nemo = self.resize_image(nemo, scale_percent=50)
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
-        elif screen=='tooltip_square':
+        elif screen=='tooltip':
             nemo = self.save_square(top=725,left=1300,square_width=100)
             lower_hsv = self.tooltip_lower_hsv
             upper_hsv = self.tooltip_upper_hsv
@@ -414,8 +423,8 @@ class bobber_bot():
                 # [Click Fishing pole]:
                 pyautogui.click(x=self._fishing_pole_loc.get('x'), y=self._fishing_pole_loc.get('y'), button='left', clicks=1)
             else:
-                pyautogui.typewrite('9') # fishing bauble on toolbar
-                pyautogui.typewrite('7') # fishing pole on toolbar
+                pyautogui.typewrite('9') # fishing bauble on action bar
+                pyautogui.typewrite('7') # fishing pole on action bar
 
             time.sleep(10) # sleep while casting bauble~
             self._bauble_elapsed = 0
@@ -425,10 +434,10 @@ class bobber_bot():
     def start(self):
         # [Calibrate HSV for bobber/tooltip]:
         self.sp.calibrate_image(screen='bobber')
-        self.sp.calibrate_image(screen='tooltip_square')
+        self.sp.calibrate_image(screen='tooltip')
 
         if self._use_mouse_mode:
-            self.calibrate_mouse_toolbar()
+            self.calibrate_mouse_actionbar()
 
         self._timer_start = time.time()
         input('[Enter to start bot!]: (3sec delay)')
@@ -531,7 +540,7 @@ class bobber_bot():
         _coords = ((top+(starty/2)), (left+(startx/2)))
         pyautogui.moveTo(_coords[1], _coords[0], duration=0)
 
-        thresh = self.sp.thresh_image(screen='tooltip_square')
+        thresh = self.sp.thresh_image(screen='tooltip')
         tooltip_top = 20
         tooltip_left = 15
 
@@ -554,11 +563,11 @@ class bobber_bot():
             self._timer_elapsed = (time.time() - self._timer_start)
 
     # [Have user calibrate location of items on taskbar]:
-    def calibrate_mouse_toolbar(self):
+    def calibrate_mouse_actionbar(self):
         # [Check for config files]:
-        config_filename = 'configs/config_mouse_toolbar.json'
+        config_filename = 'configs/config_mouse_action bar.json'
         if os.path.isfile(config_filename):
-            _use_calibrate_config = input('[Calibration config found for mouse_toolbar | Use this?]: ')
+            _use_calibrate_config = input('[Calibration config found for mouse_action bar | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             _use_calibrate_config = False
@@ -615,12 +624,12 @@ class mouse_calibrator(PyMouseEvent):
     def __init__(self):
         PyMouseEvent.__init__(self)
         if _dev==False:
-            print('[Calibrating fishing_pole toolbar location! Alt-tab, go left-click it && come back here!]')
+            print('[Calibrating fishing_pole action bar location! Alt-tab, go left-click it && come back here!]')
             self._calibrating = True
 
-    def save_calibration(self):
+    def save_mouse_calibration(self):
         # [Load up current configs]:
-        config_filename = 'config_mouse_toolbar.json'
+        config_filename = 'config_mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -643,11 +652,11 @@ class mouse_calibrator(PyMouseEvent):
             if self._fishing_pole_loc == None:
                 self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
                 print(self._fishing_pole_loc)
-                print('[Calibrating fishing_skill toolbar location! Alt-tab, go left-click it && come back here!]')
+                print('[Calibrating fishing_skill action bar location! Alt-tab, go left-click it && come back here!]')
             elif self._fishing_skill_loc == None:
                 self._fishing_skill_loc = {"fishing_skill" : { "x":int_x, "y":int_y }}
                 print(self._fishing_skill_loc)
-                print('[Calibrating fishing_bauble toolbar location! Alt-tab, go left-click it && come back here!]')
+                print('[Calibrating fishing_bauble action bar location! Alt-tab, go left-click it && come back here!]')
             elif self._fishing_bauble_loc == None:
                 self._fishing_bauble_loc = {"fishing_bauble" : { "x":int_x, "y":int_y }}
                 print(self._fishing_bauble_loc)
@@ -655,7 +664,7 @@ class mouse_calibrator(PyMouseEvent):
             else:
                 print('[Ending Calibration]')
                 self._calibrating = False
-                self.save_calibration()
+                self.save_mouse_calibration()
                 self.stop()
 
         # [Mouse-override for `_dev` testing]:
@@ -673,5 +682,5 @@ if __name__ == '__main__':
         print('[_dev testing]:')
         #mc = mouse_calibrator()
         #mc.run()
-        
+
 print('[fin.]')

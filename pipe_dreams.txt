@@ -1,23 +1,20 @@
-#[0]: Windows implementation of capture()
-    > https://pypi.org/project/mss/ (?)
+#[0]: Finish Windows Implementation
 
-#[1]: Re-write configs to use JSON
+#[1]: Try to restart on D/C?
 
-#[2]: Try to restart on D/C?
+#[2]: Set up "scan area" by drawing rectangle on the screen:
+    > https://pyautogui.readthedocs.io/en/latest/mouse.html#mouse-drags
 
 #[3]: Detect when bags are full / exit
 #[3]: Pause loop => /target Stuart Fleming + \ = Sell all trash => (delay?) Esc => start loop
 #[3]: Pause loop => Use Mailbox?
 
-#[4]: Set up "scan area" by drawing rectangle on the screen:
-    > https://pyautogui.readthedocs.io/en/latest/mouse.html#mouse-drags
 
-
-#[5]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
+#[4]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
 '''
 # [Enabling repeating keypress for OSX]: (for alt-tab)
 os.system('defaults write -g ApplePressAndHoldEnabled -bool false')
-pyautogui.hotkey('winleft', 'tab')
+pyautogui.hotkey('winleft', 'tab', interval=0.1)
 # [Disabling repeating keypress for OSX]: (back to defaults)
 os.system('defaults write -g ApplePressAndHoldEnabled -bool true')
 '''
