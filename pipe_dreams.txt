@@ -1,4 +1,5 @@
 #[0]: Finish Windows Implementation
+    > https://www.howtogeek.com/howto/39532/how-to-enable-stereo-mix-in-windows-7-to-record-audio/
 
 #[1]: Try to restart on D/C?
 
@@ -11,15 +12,17 @@
 
 
 #[4]: Can I script the bot to click on the screen before it starts / no delay / "start from python" rather than "start from wow"
-'''
-# [Enabling repeating keypress for OSX]: (for alt-tab)
-os.system('defaults write -g ApplePressAndHoldEnabled -bool false')
-pyautogui.hotkey('winleft', 'tab', interval=0.1)
-# [Disabling repeating keypress for OSX]: (back to defaults)
-os.system('defaults write -g ApplePressAndHoldEnabled -bool true')
-'''
+    '''
+    # [Enabling repeating keypress for OSX]: (for alt-tab)
+    os.system('defaults write -g ApplePressAndHoldEnabled -bool false')
+    pyautogui.hotkey('winleft', 'tab', interval=0.1)
+    # [Disabling repeating keypress for OSX]: (back to defaults)
+    os.system('defaults write -g ApplePressAndHoldEnabled -bool true')
+    '''
+    > If this works in windows.. Automate some of the alt-tabbing during calibration / to start the bot. </3
 
 //-------
-#[Clear my gui]:
-#/bfw toggle
-#/raven (Uncheck `Enable Raven`)
+# [Clear my gui]:
+    > **ALT + Z APPARENTLY CLEARS THE ENTIRE UI XD**
+    > /bfw toggle
+    > /raven (Uncheck `Enable Raven`)
