@@ -317,19 +317,23 @@ class ScreenPixel(object):
 def audio_callback(in_data, frame_count, time_info, status):
     try:
         data = numpy.frombuffer(in_data ,dtype=numpy.int16)
-        peak = numpy.average(numpy.abs(data))*2
-        peak = int(peak)
-        
-        if peak > bb._audio_threshold and bb._splash_detected==False:
-            bb._splash_detected = True
 
-            if bb._timer_start is not None:
+        # [Waits for bot to start before listening for audio]:
+        if bb._timer_start is not None:
+            
+            peak = numpy.average(numpy.abs(data))*2
+            peak = int(peak)
+
+            if peak > bb._audio_threshold and bb._splash_detected==False:
                 if bb._bobber_found:
                     #print('Splash detected, with bobber: {0}'.format(peak))
-                    self._catch_cnt+=1
+                    bb._catch_cnt+=1
                 else:
                     #print('Splash detected, no bobber: {0}'.format(peak))
-                    self._miss_cnt+=1
+                    bb._miss_cnt+=1
+
+                bb._splash_detected=True
+                bb._bobber_reset=True
 
         return data, pyaudio.paContinue
 
@@ -339,10 +343,12 @@ def audio_callback(in_data, frame_count, time_info, status):
         bb._audio_stream.close()
         bb.pa.terminate()
 
-        # [Die Young, Leave beautiful code]:
-        print('[Bye]')
+        # [Die Young && Leave beautiful code]:
+        print('[Bye!]')
+        print('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
+        print('Catch count: {0}'.format(bb._catch_cnt))
+        print('Miss count:  {0}'.format(bb._miss_cnt))
         sys.exit(1)
-
 
 class bobber_bot():
     # [Included Classes]:
@@ -355,6 +361,7 @@ class bobber_bot():
     _count_cnt = 0
     _fishing = True
     _timeout_cnt = 0
+    _bot_start = None
     _timer_start = None
     _timer_elapsed = 30
     _audio_stream = None
@@ -370,9 +377,9 @@ class bobber_bot():
 
     # [BobberBot Settings]:
     _use_baubles = True
-    _use_auto_sell = False
-    _use_mouse_mode = False
-    _use_chatty_mode = False
+    _use_auto_sell = True
+    _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
+    _use_chatty_mode = False # Uses chat/channel rather than console for bot output
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -395,7 +402,8 @@ class bobber_bot():
         # [Check to see if we should sell fish]:
         if self._use_auto_sell:
             # [Until we are able to determine when bags are full]:
-            if self._catch_cnt > 600:
+            #if self._catch_cnt > 600:
+            if self._catch_cnt > 50:
                 self.sell_fish('Stuart Fleming')
 
         self._timer_elapsed = 0
@@ -409,9 +417,10 @@ class bobber_bot():
             pyautogui.typewrite('8')
 
         time.sleep(3) # Wait so that we don't try and find old bobber as it fades (? needed now?)
-        self._bobber_reset=True
+        self._bobber_reset = True
         self._bobber_found = False
         self._splash_detected = False
+        self._count_cnt = 0
 
     def bauble_check(self):
         if self._splash_detected:
@@ -447,17 +456,21 @@ class bobber_bot():
             self.ghost_chat('[Selling Fish in 3sec!]')
         else:
             print('[BobberBot Started]')
+            self._bot_start = time.time()
 
         playsound.playsound('audio/sms_alert.mp3')
         self._audio_stream.start_stream()
-
+        #_use_mouse_mode
         while self._audio_stream.is_active():
             try:
                 # [Start Fishing / 30sec fishing timer]:
                 if self._timer_elapsed >= 30 or self._splash_detected:
                     # [Right-click if splash is detected]:
                     if self._splash_detected:
-                        pyautogui.rightClick(x=None, y=None)
+                        if self._bobber_found == False:
+                            pyautogui.rightClick(x=None, y=None)
+                        else:
+                            pyautogui.rightClick(x=self._bobber_found[1], y=self._bobber_found[0])
                         self._timeout_cnt = 0
                     elif self._splash_detected == False and self._timer_start is not None:
                         self._timeout_cnt+=1
@@ -476,7 +489,10 @@ class bobber_bot():
 
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
-                print('[Bye]')
+                print('[Bye!]')
+                print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                print('Catch count: {0}'.format(self._catch_cnt))
+                print('Miss count:  {0}'.format(self._miss_cnt))
 
                 # [Stop Audio Stream]:
                 self._audio_stream.stop_stream()
@@ -565,7 +581,7 @@ class bobber_bot():
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
         # [Check for config files]:
-        config_filename = 'configs/config_mouse_action bar.json'
+        config_filename = 'configs/config_mouse_actionbar.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Calibration config found for mouse_action bar | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -629,7 +645,7 @@ class mouse_calibrator(PyMouseEvent):
 
     def save_mouse_calibration(self):
         # [Load up current configs]:
-        config_filename = 'config_mouse_actionbar.json'
+        config_filename = 'configs/config_mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
