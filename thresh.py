@@ -369,7 +369,7 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
-    _audio_threshold = 2000
+    _audio_threshold = 1600
     _splash_detected = False
     _fishing_pole_loc = None
     _fishing_skill_loc = None
@@ -377,7 +377,7 @@ class bobber_bot():
 
     # [BobberBot Settings]:
     _use_baubles = True
-    _use_auto_sell = True
+    _use_auto_sell = False
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
     _use_chatty_mode = False # Uses chat/channel rather than console for bot output
 
@@ -402,9 +402,9 @@ class bobber_bot():
         # [Check to see if we should sell fish]:
         if self._use_auto_sell:
             # [Until we are able to determine when bags are full]:
-            #if self._catch_cnt > 600:
-            if self._catch_cnt > 50:
-                self.sell_fish('Stuart Fleming')
+            if self._catch_cnt!=0 and self._catch_cnt % 50 == 0:
+                #self.sell_fish('Stuart Fleming')
+                self.sell_fish()
 
         self._timer_elapsed = 0
         self._timer_start = time.time()
@@ -473,6 +473,7 @@ class bobber_bot():
                             pyautogui.rightClick(x=self._bobber_found[1], y=self._bobber_found[0])
                         self._timeout_cnt = 0
                     elif self._splash_detected == False and self._timer_start is not None:
+                        self._miss_cnt+=1
                         self._timeout_cnt+=1
                         if self._timeout_cnt >= 20:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
@@ -603,7 +604,7 @@ class bobber_bot():
         print('[Mouse Calibration finished~ Domo Arigato!]')
 
     # [Bind `Interact Vendor` to `\` key]:
-    def sell_fish(self, vendor_name):
+    def sell_fish(self, vendor_name=None):
         if self._use_chatty_mode:
             self.ghost_chat('[Selling Fish in 3sec!]')
         else:
@@ -611,7 +612,9 @@ class bobber_bot():
         time.sleep(3)
 
         # [Target vendor and use `\` to interact with them]: (AutoVendor addon does the rest of the magic)
-        self.chat_command('/target {0}'.format(vendor_name))
+        if vendor_name is not None:
+            self.chat_command('/target {0}'.format(vendor_name))
+
         pyautogui.press('\\') # Interact Vendor keybind
         time.sleep(3)
         pyautogui.press('esc')
@@ -693,7 +696,8 @@ bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
-        bb.sell_fish('Stuart Fleming')
+        #bb.sell_fish('Stuart Fleming')
+        bb.sell_fish()
     else:
         print('[_dev testing]:')
         #mc = mouse_calibrator()
