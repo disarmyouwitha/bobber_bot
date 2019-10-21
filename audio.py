@@ -43,11 +43,10 @@ def listen_splash(threshold):
 
     # [Windows fork of pyaudio allows us to call speakers as loopback device]:
     if sys.platform == 'darwin':
-        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=CHUNK, input_device_index=dev_idx)
     else:
-        #stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback, as_loopback=True)
-        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
-
+        #stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=CHUNK, input_device_index=dev_idx, as_loopback=True)
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=CHUNK, input_device_index=dev_idx)
     try:
         _splash_detected = False
         while _timer_elapsed < 30 and _splash_detected==False:
