@@ -344,11 +344,15 @@ def audio_callback(in_data, frame_count, time_info, status):
         bb.pa.terminate()
 
         # [Die Young && Leave beautiful code]:
-        print('[Bye!]')
         print('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
         print('Catch count: {0}'.format(bb._catch_cnt))
         print('Miss count:  {0}'.format(bb._miss_cnt))
-        sys.exit(1)
+
+        _exit = input('[Do you wish to exit?]')
+        _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
+        if _exit:
+            print('[Bye!]')
+            sys.exit(1)
 
 class bobber_bot():
     # [Included Classes]:
@@ -369,15 +373,15 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
-    _audio_threshold = 1600
+    _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
 
     # [BobberBot Settings]:
-    _use_baubles = True
-    _use_auto_sell = False
+    _use_baubles = False
+    _use_auto_sell = True
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
     _use_chatty_mode = False # Uses chat/channel rather than console for bot output
 
@@ -477,6 +481,10 @@ class bobber_bot():
                         self._timeout_cnt+=1
                         if self._timeout_cnt >= 20:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
+                            print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                            print('Catch count: {0}'.format(self._catch_cnt))
+                            print('Miss count:  {0}'.format(self._miss_cnt))
+                            print('[Bye!]')
                             sys.exit(1)
                     self.cast_pole()
                 self._timer_elapsed = (time.time() - self._timer_start)
@@ -490,18 +498,23 @@ class bobber_bot():
 
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
-                print('[Bye!]')
+
                 print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                 print('Catch count: {0}'.format(self._catch_cnt))
                 print('Miss count:  {0}'.format(self._miss_cnt))
 
-                # [Stop Audio Stream]:
-                self._audio_stream.stop_stream()
-                self._audio_stream.close()
-                self.pa.terminate()
+                _exit = input('[Do you wish to exit?]:')
+                _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
+                if _exit:
+                    print('[Bye!]')
 
-                # [Die Young, Leave beautiful code]:
-                sys.exit(1)
+                    # [Stop Audio Stream]:
+                    self._audio_stream.stop_stream()
+                    self._audio_stream.close()
+                    self.pa.terminate()
+
+                    # [Die Young, Leave beautiful code]:
+                    sys.exit(1)
 
         # [Stop Audio Stream]:
         self._audio_stream.stop_stream()
