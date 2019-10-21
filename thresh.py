@@ -393,10 +393,14 @@ class bobber_bot():
     def setup_audio(self):
         dev_idx = 0 # Microphone as input
         dev_idx = 2 # Speakers as input
-        if dev_idx > 0:
+        # ^ System Dependant, use audio.py to configure
+
+        # [Windows fork of pyaudio allows us to call speakers as loopback device]:
+        if sys.platform == 'darwin':
             self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
         else:
-            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, stream_callback=audio_callback)
+            #self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback, as_loopback=True)
+            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
 
     def cast_pole(self):
         # [Check to apply bauble]:
@@ -717,3 +721,6 @@ if __name__ == '__main__':
         #mc.run()
 
 print('[fin.]')
+
+
+# https://www.microsoft.com/en-us/software-download/windows10ISO
