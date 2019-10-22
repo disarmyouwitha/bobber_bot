@@ -16,7 +16,7 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = False
+_dev = True
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -448,6 +448,34 @@ class bobber_bot():
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
+    # We have determined that we have disconnected.. How to reconnect?
+    def reconnect(self):
+        # [0]: DETERMINE IF WE ARE AT THE CHARACTER_LOGOUT OR GAME_LOGIN SCREEN(?)
+        # [1]: IF GAME_LOGIN:
+        #   Hit ESC to clear dialog / rather than clicking okay.
+        if os.path.isfile('configs/pass.txt'):
+            with open('configs/pass.txt') as f:
+                _pass = f.read().strip()
+                pyautogui.press('esc')
+                pyautogui.typewrite(_pass)
+                pyautogui.press('enter')
+                #Delay(10s) for login / Hit Enter to login as character?
+                time.sleep(10)
+                pyautogui.press('enter')
+                time.sleep(10)
+                #^(Loop to check for character selection screen?)
+
+                # [Check if bot is dead / go ahead and exit xD]:
+                if self.is_dead():
+                    return -1
+                else:
+                    return 1
+        return 0
+
+    def is_dead(self):
+        print('OooOoOoooOooo')
+        return True
+
     def start(self):
         # [Calibrate HSV for bobber/tooltip]:
         self.sp.calibrate_image(screen='bobber')
@@ -488,8 +516,20 @@ class bobber_bot():
                             print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                             print('Catch count: {0}'.format(self._catch_cnt))
                             print('Miss count:  {0}'.format(self._miss_cnt))
-                            print('[Bye!]')
-                            sys.exit(1)
+
+                            # [Try to reconenct a few times]:
+                            for x in range(0,2):
+                                _reconnected = self.reconnect()
+                                if _reconnected != 0:
+                                    break
+                            if _reconnected == -1:
+                                print("[Reconnected: he's dead jim!]")
+                                sys.exit(1)
+                            if _reconnected == 0:
+                                print('[Could not reconnect, bye!]')
+                                sys.exit(1)
+
+                    # [Cast Pole!]:
                     self.cast_pole()
                 self._timer_elapsed = (time.time() - self._timer_start)
 
@@ -713,12 +753,11 @@ bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
-        #bb.sell_fish('Stuart Fleming')
-        bb.sell_fish()
     else:
         print('[_dev testing]:')
         #mc = mouse_calibrator()
         #mc.run()
+        bb.reconnect()
 
 print('[fin.]')
 
