@@ -106,6 +106,27 @@ class ScreenPixel(object):
         # [Trim _numpy array to screen_fast]:
         return self._numpy[starty:starty+cropy,startx:startx+cropx]
 
+    # [To facilitate grabbing Scan Area]:
+    def save_rect(self, json_coords_start, json_coords_stop, mod=2):
+        _start_x = json_coords_start.get('x')
+        _start_y = json_coords_start.get('y')
+        start_x = (_start_x*mod)
+        start_y = (_start_y*mod)
+
+        _stop_x = json_coords_stop.get('x')
+        _stop_y = json_coords_stop.get('y')
+        stop_x = (_stop_x*mod)
+        stop_y = (_stop_y*mod)
+
+        top_start = start_y
+        top_stop = stop_y
+        left_start = start_x
+        left_stop = stop_x
+
+        # [Trim _numpy array to rect]:
+        return self._numpy[start_y:stop_y,start_x:stop_x]
+
+    # Square is a type of rectangle.. might not need this / might re-write to call save_rect?
     def save_square(self, top, left, square_width=100, mod=2, center=False):
         top = (top*mod)
         left = (left*mod)
@@ -131,7 +152,7 @@ class ScreenPixel(object):
             left_start = 0
         left_stop = (left_start+square_width)
 
-        # [Trim _numpy array to numpy_square]:
+        # [Trim _numpy array to square]:
         return self._numpy[top_start:top_stop,left_start:left_stop]
 
     def nothing(self, x):
@@ -171,7 +192,8 @@ class ScreenPixel(object):
             # [Capture of calibration image]:
             self.capture()
             if screen=='bobber':
-                nemo = self.screen_fast(.5)
+                #nemo = self.screen_fast(.5)
+                nemo = self.sp.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) # MOD2?? xD
                 nemo = self.resize_image(nemo, scale_percent=50)
                 lower_hsv = self.bobber_lower_hsv
                 upper_hsv = self.bobber_upper_hsv
@@ -291,7 +313,8 @@ class ScreenPixel(object):
     def thresh_image(self, screen='bobber'):
         self.capture()
         if screen=='bobber':
-            nemo = self.screen_fast(.5)
+            #nemo = self.screen_fast(.5)
+            nemo = self.sp.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) # MOD2?? xD
             nemo = self.resize_image(nemo, scale_percent=50)
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
@@ -373,12 +396,14 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
+    _scanarea_stop = None
+    _scanarea_start = None
     _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
-
+    
     # [BobberBot Settings]:
     _use_baubles = False
     _use_auto_sell = True
@@ -477,6 +502,9 @@ class bobber_bot():
         return True
 
     def start(self):
+        # [Calibrate Scan Area]:
+        self.calibrate_mouse_scanarea()
+
         # [Calibrate HSV for bobber/tooltip]:
         self.sp.calibrate_image(screen='bobber')
         self.sp.calibrate_image(screen='tooltip')
@@ -496,7 +524,7 @@ class bobber_bot():
 
         playsound.playsound('audio/sms_alert.mp3')
         self._audio_stream.start_stream()
-        #_use_mouse_mode
+
         while self._audio_stream.is_active():
             try:
                 # [Start Fishing / 30sec fishing timer]:
@@ -636,6 +664,53 @@ class bobber_bot():
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
             self._timer_elapsed = (time.time() - self._timer_start)
 
+    # [Have user calibrate location of Scan Area]:
+    def calibrate_mouse_scanarea(self):
+        # [Check for config files]:
+        config_filename = 'configs/config_mouse_scanarea.json'
+        if os.path.isfile(config_filename):
+            _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
+            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
+        else:
+            _use_calibrate_config = False
+
+        # [Calibrate mouse _coords for each action bar item used]:
+        if _use_calibrate_config == False:
+            mc = mouse_calibrator('calibrate_scanarea')
+            mc.run()
+
+        # [Load config file into globals]:
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+            self._scanarea_start = configs['scanarea_start']
+            self._scanarea_stop = configs['scanarea_stop']
+
+        if _use_calibrate_config == False:
+            # [Draw box around Scan Area specified with mouse]:
+            print('Pause. Drawing scan area with mouse:')
+            time.sleep(2)
+            _start_x = self._scanarea_start.get('x')
+            _start_y = self._scanarea_start.get('y')
+            _stop_x = self._scanarea_stop.get('x')
+            _stop_y = self._scanarea_stop.get('y')
+            _diff_x = (_stop_x - _start_x)
+            _diff_y = (_stop_y - _start_y)
+            pyautogui.moveTo(_start_x, _start_y, duration=1)
+            pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
+            pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
+            pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
+            pyautogui.moveTo(_start_x,_start_y, duration=1)
+
+            # [Save image for debugging]:
+            self.sp.capture()
+            nemo = self.sp.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
+            imageio.imwrite('screen_scanarea_rect.png', nemo)
+
+            _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
+            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
+            if _calibrate_good == False:
+                self.calibrate_mouse_scanarea()
+
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
         # [Check for config files]:
@@ -648,7 +723,7 @@ class bobber_bot():
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
-            mc = mouse_calibrator()
+            mc = mouse_calibrator('calibrate_mouse_actionbar')
             mc.run()
 
         # [Load config file into globals]:
@@ -690,18 +765,26 @@ class bobber_bot():
 
 class mouse_calibrator(PyMouseEvent):
     _click_cnt = 0
-    action_loc = None
-    action_name = None
+    _calibrating = False
+    _scanarea_stop = None
+    _scanarea_start = None
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
-    _calibrating = False
 
-    def __init__(self):
+    def __init__(self, state=None):
         PyMouseEvent.__init__(self)
-        if _dev==False:
+        if state == 'calibrate_mouse_actionbar':
             print('[Calibrating fishing_pole action bar location! Alt-tab, go left-click it && come back here!]')
+            self._fishing_pole_loc = None
+            self._fishing_skill_loc = None
+            self._fishing_bauble_loc = None
             self._calibrating = True
+        elif state == 'calibrate_scanarea':
+            print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
+            _scanarea_stop = None
+            _scanarea_start = None
+            _calibrating = False
 
     def save_mouse_calibration(self):
         # [Load up current configs]:
@@ -720,10 +803,27 @@ class mouse_calibrator(PyMouseEvent):
 
         self.stop()
 
+    def save_mouse_scanarea(self):
+        # [Load up current configs]:
+        config_filename = 'configs/config_mouse_scanarea.json'
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+
+        # [Update config for locations]:
+        configs.update(self._scanarea_start)
+        configs.update(self._scanarea_stop)
+
+        # [Save values back to config file to update values]:
+        with open(config_filename, 'w') as fp:
+            json.dump(configs, fp)
+
+        self.stop()
+
     def click(self, x, y, button, press):
         int_x = int(x)
         int_y = int(y)
 
+        # [Code for Mouse Mouse Calibration]:
         if button==1 and press and self._calibrating and _dev==False:
             if self._fishing_pole_loc == None:
                 self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
@@ -743,23 +843,34 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_mouse_calibration()
                 self.stop()
 
-        # [Mouse-override for `_dev` testing]:
-        if button==1 and press and _dev==True:
+        # [Code for Scan Area Calibration]:
+        if button==1 and self._calibrating==False: #and _dev==False:
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+            if press:
+                self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
+            else:
+                self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
 
+            # [Send coords back over to bobberbot]:
+            if self._scanarea_stop is not None:
+                self.save_mouse_scanarea()
 
-# Hide UI (ALT + Z)
+        '''
+        # [Mouse-override for `_dev` testing]:
+        if button==1 and _dev==True:
+            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+            self.stop()
+        '''
+
+# Able to detect if 
 bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
     else:
         print('[_dev testing]:')
-        #mc = mouse_calibrator()
-        #mc.run()
-        bb.reconnect()
+        #bb.reconnect()
+        bb.calibrate_mouse_scanarea()
+        #bb.sp.calibrate_image(screen='bobber')
 
 print('[fin.]')
-
-
-# https://www.microsoft.com/en-us/software-download/windows10ISO
