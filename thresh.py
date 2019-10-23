@@ -16,7 +16,7 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = False
+_dev = True
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -406,7 +406,7 @@ class bobber_bot():
     
     # [BobberBot Settings]:
     _use_baubles = False
-    _use_auto_sell = True
+    _use_auto_sell = False
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
     _use_chatty_mode = False # Uses chat/channel rather than console for bot output
 
@@ -478,6 +478,7 @@ class bobber_bot():
         # [0]: DETERMINE IF WE ARE AT THE CHARACTER_LOGOUT OR GAME_LOGIN SCREEN(?)
         # [1]: IF GAME_LOGIN:
         #   Hit ESC to clear dialog / rather than clicking okay.
+        time.sleep(2)
         if os.path.isfile('configs/pass.txt'):
             with open('configs/pass.txt') as f:
                 _pass = f.read().strip()
@@ -544,8 +545,10 @@ class bobber_bot():
                             print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                             print('Catch count: {0}'.format(self._catch_cnt))
                             print('Miss count:  {0}'.format(self._miss_cnt))
+                            sys.exit(1)
 
                             # [Try to reconenct a few times]:
+                            '''
                             for x in range(0,2):
                                 _reconnected = self.reconnect()
                                 if _reconnected != 0:
@@ -556,6 +559,7 @@ class bobber_bot():
                             if _reconnected == 0:
                                 print('[Could not reconnect, bye!]')
                                 sys.exit(1)
+                            '''
 
                     # [Cast Pole!]:
                     self.cast_pole()
@@ -864,6 +868,6 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_dev testing]:')
-        #bb.reconnect()
+        bb.reconnect()
 
 print('[fin.]')
