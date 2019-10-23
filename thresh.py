@@ -16,7 +16,7 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = True
+_dev = False
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
