@@ -372,6 +372,10 @@ def audio_callback(in_data, frame_count, time_info, status):
         print('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
         print('Catch count: {0}'.format(bb._catch_cnt))
         print('Miss count:  {0}'.format(bb._miss_cnt))
+        if self._use_chatty_mode:
+            self.chat_command('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
+            self.chat_command('Catch count: {0}'.format(bb._catch_cnt))
+            self.chat_command('Miss count:  {0}'.format(bb._miss_cnt))
 
         _exit = input('[Do you wish to exit?]')
         _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
@@ -409,7 +413,7 @@ class bobber_bot():
     # [BobberBot Settings]:
     _use_baubles = True
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
-    _use_chatty_mode = False # Uses chat/channel rather than console for bot output
+    _use_chatty_mode = True # Uses (private)channel chat, rather than python console, for bot output. /join bobberbot. /4
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -511,11 +515,8 @@ class bobber_bot():
         input('[Enter to start bot!]: (3sec delay)')
         time.sleep(3)
 
-        if self._use_chatty_mode:
-            self.ghost_chat('[Selling Fish in 3sec!]')
-        else:
-            print('[BobberBot Started]')
-            self._bot_start = time.time()
+        print('[BobberBot Started]')
+        self._bot_start = time.time()
 
         playsound.playsound('audio/sms_alert.mp3')
         self._audio_stream.start_stream()
@@ -572,6 +573,10 @@ class bobber_bot():
                 print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                 print('Catch count: {0}'.format(self._catch_cnt))
                 print('Miss count:  {0}'.format(self._miss_cnt))
+                if self._use_chatty_mode:
+                    self.chat_command('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                    self.chat_command('Catch count: {0}'.format(self._catch_cnt))
+                    self.chat_command('Miss count:  {0}'.format(self._miss_cnt))
 
                 _exit = input('[Do you wish to exit?]:')
                 _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
