@@ -194,7 +194,8 @@ class ScreenPixel(object):
             # [Capture of calibration image]:
             self.capture()
             if screen=='bobber':
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) # MOD2?? xD
+                #nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2) # MOD2?? xD
+                nemo = self.screen_fast(.5)
                 nemo = self.resize_image(nemo, scale_percent=50)
                 lower_hsv = self.bobber_lower_hsv
                 upper_hsv = self.bobber_upper_hsv
@@ -314,7 +315,8 @@ class ScreenPixel(object):
     def thresh_image(self, screen='bobber'):
         self.capture()
         if screen=='bobber':
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) # MOD2?? xD
+            #nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2) # MOD2?? xD
+            nemo = self.screen_fast(.5)
             nemo = self.resize_image(nemo, scale_percent=50)
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
@@ -405,8 +407,7 @@ class bobber_bot():
     _fishing_bauble_loc = None
     
     # [BobberBot Settings]:
-    _use_baubles = False
-    _use_auto_sell = False
+    _use_baubles = True
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
     _use_chatty_mode = False # Uses chat/channel rather than console for bot output
 
@@ -431,13 +432,6 @@ class bobber_bot():
         # [Check to apply bauble]:
         if self._use_baubles:
             self.bauble_check()
-
-        # [Check to see if we should sell fish]:
-        if self._use_auto_sell:
-            # [Until we are able to determine when bags are full]:
-            if self._catch_cnt!=0 and self._catch_cnt % 50 == 0:
-                #self.sell_fish('Stuart Fleming')
-                self.sell_fish()
 
         self._timer_elapsed = 0
         self._timer_start = time.time()
@@ -734,22 +728,6 @@ class bobber_bot():
             self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
-
-    # [Bind `Interact Vendor` to `\` key]:
-    def sell_fish(self, vendor_name=None):
-        if self._use_chatty_mode:
-            self.ghost_chat('[Selling Fish in 3sec!]')
-        else:
-            print('[Selling Fish in 3sec!]')
-        time.sleep(3)
-
-        # [Target vendor and use `\` to interact with them]: (AutoVendor addon does the rest of the magic)
-        if vendor_name is not None:
-            self.chat_command('/target {0}'.format(vendor_name))
-
-        pyautogui.press('\\') # Interact Vendor keybind
-        time.sleep(3)
-        pyautogui.press('esc')
 
     def chat_command(self, cmd):
         pyautogui.press('enter')
