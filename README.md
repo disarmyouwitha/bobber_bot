@@ -67,4 +67,6 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > python3 -m pip install PyUserInput
 
+> python3 -m pip install scikit-image
+
 > python3 -m pip install opencv-python

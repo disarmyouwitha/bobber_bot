@@ -9,6 +9,7 @@ import imageio
 import pyautogui
 import playsound
 import contextlib
+import skimage.metrics
 from pymouse import PyMouseEvent
 # [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
 if sys.platform == 'darwin':
@@ -16,7 +17,7 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = False
+_dev = True
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -372,10 +373,6 @@ def audio_callback(in_data, frame_count, time_info, status):
         print('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
         print('Catch count: {0}'.format(bb._catch_cnt))
         print('Miss count:  {0}'.format(bb._miss_cnt))
-        if self._use_chatty_mode:
-            self.chat_command('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
-            self.chat_command('Catch count: {0}'.format(bb._catch_cnt))
-            self.chat_command('Miss count:  {0}'.format(bb._miss_cnt))
 
         _exit = input('[Do you wish to exit?]')
         _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
@@ -409,11 +406,13 @@ class bobber_bot():
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
+
+    #"/Applications/World of Warcraft/_classic_/Logs/WoWChatLog.txt"
     
     # [BobberBot Settings]:
-    _use_baubles = True
+    _use_baubles = False
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
-    _use_chatty_mode = True # Uses (private)channel chat, rather than python console, for bot output. /join bobberbot. /4
+    _use_chatty_mode = False # Uses (private)channel chat, rather than python console, for bot output. /join bobberbot. /4
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -471,34 +470,67 @@ class bobber_bot():
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
+    def check_login(self):
+        #[Capture Login Rect]:
+        print('[Checking for login screen / Checking for disconnect] 2sec..')
+        time.sleep(2)
+        self.sp.capture()
+        _draw_rect_start = {"x": 420, "y": 394}
+        _draw_rect_stop = {"x": 1013, "y": 673}
+        nemo = self.sp.save_rect(_draw_rect_start, _draw_rect_stop, mod=2)
+
+        # [Convert images to grayscale]:
+        gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+        gray_control = imageio.imread('img/login_control_gray.png')
+
+        (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
+        #diff = (diff * 255).astype("uint8")
+
+        print("SSIM: {}".format(score))
+        return True if (score > .90) else False
+
     # We have determined that we have disconnected.. How to reconnect?
     def reconnect(self):
-        # [0]: DETERMINE IF WE ARE AT THE CHARACTER_LOGOUT OR GAME_LOGIN SCREEN(?)
-        # [1]: IF GAME_LOGIN:
-        #   Hit ESC to clear dialog / rather than clicking okay.
-        time.sleep(2)
-        if os.path.isfile('configs/pass.txt'):
-            with open('configs/pass.txt') as f:
-                _pass = f.read().strip()
-                pyautogui.press('esc')
-                pyautogui.typewrite(_pass)
-                pyautogui.press('enter')
-                #Delay(10s) for login / Hit Enter to login as character?
-                time.sleep(10)
-                pyautogui.press('enter')
-                time.sleep(10)
-                #^(Loop to check for character selection screen?)
+        login_clear = self.check_login()
+        print(login_clear)
+        
+        if login_clear:
+            if os.path.isfile('configs/pass.txt'):
+                with open('configs/pass.txt') as f:
+                    _pass = f.read().strip()
+                    # [Enter password]:
+                    pyautogui.typewrite(_pass)
+                    pyautogui.press('enter')
 
-                # [Check if bot is dead / go ahead and exit xD]:
-                if self.is_dead():
-                    return -1
-                else:
-                    return 1
+                    # Delay(15s) for login / Hit Enter to login as character:
+                    time.sleep(15)
+                    pyautogui.press('enter')
+
+                    # [Check if bot is dead / go ahead and exit xD]:
+                    time.sleep(15)
+                    if self.is_dead():
+                        return -1
+                    else:
+                        return 1
+        else:
+            # Hit ESC to clear dialog / rather than clicking okay:
+            pyautogui.press('esc')
+
         return 0
+
+    # [Try to clear disconnect messages and reconnect 3 times]:
+    def auto_reconnect(self):
+        for x in range(0,2):
+            print(x)
+            reconnected = self.reconnect()
+            print('reconnected: '.format(reconnected))
+            if reconnected==1:
+                print('[Reconnected!!]')
+                break
 
     def is_dead(self):
         print('OooOoOoooOooo')
-        return True
+        return False
 
     def start(self):
         # [Calibrate Scan Area]:
@@ -543,18 +575,13 @@ class bobber_bot():
                             sys.exit(1)
 
                             # [Try to reconenct a few times]:
-                            '''
-                            for x in range(0,2):
-                                _reconnected = self.reconnect()
-                                if _reconnected != 0:
-                                    break
-                            if _reconnected == -1:
-                                print("[Reconnected: he's dead jim!]")
-                                sys.exit(1)
-                            if _reconnected == 0:
-                                print('[Could not reconnect, bye!]')
-                                sys.exit(1)
-                            '''
+                            #reconnected = self.auto_reconnect()
+                            #if reconnected:
+                            #   print('[Reconnected -- Starting bot back up!] 2sec..')
+                            #   time.sleep(2)
+                            #else:
+                            #   print('[Not able to reconnect, exiting] =()')
+                            #   sys.exit()
 
                     # [Cast Pole!]:
                     self.cast_pole()
@@ -573,10 +600,6 @@ class bobber_bot():
                 print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                 print('Catch count: {0}'.format(self._catch_cnt))
                 print('Miss count:  {0}'.format(self._miss_cnt))
-                if self._use_chatty_mode:
-                    self.chat_command('Run time: {0} min'.format((time.time()-self._bot_start)/60))
-                    self.chat_command('Catch count: {0}'.format(self._catch_cnt))
-                    self.chat_command('Miss count:  {0}'.format(self._miss_cnt))
 
                 _exit = input('[Do you wish to exit?]:')
                 _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
@@ -769,6 +792,8 @@ class mouse_calibrator(PyMouseEvent):
             self._scanarea_stop = None
             self._scanarea_start = None
             self._calibrating_scanarea = True
+        else:
+            print('[Mouse Listening]')
 
     def save_mouse_calibration(self):
         # [Load up current configs]:
@@ -837,20 +862,32 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_mouse_scanarea()
                 self.stop()
 
-        '''
+        #'''
         # [Mouse-override for `_dev` testing]:
-        if button==1 and _dev==True:
+        if button==2 and press and _dev==True:
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+            bb.sp.capture()
+            nemo = bb.sp.save_square(top=int_y,left=int_x,square_width=100,mod=2,center=False)
+            imageio.imwrite('calibrate_login.png', nemo)
             self.stop()
-        '''
+        #'''
 
-# Able to detect if 
+# DLMS took care of most of my problems..
+# Take catch/miss count for every hour to datamine how often threshold changes
+# [0]: finish scanarea / translate _bobber_coords to rect.
+# [1]: Change thresh bobber to look for rect of bobber rather than save_squae
+# [2]: disconnect/reconnect code. Thresh login to see if help/okay box (esc) or enter fields.
+# [3]: Check for character selection screen?
+# [4]: Check for death?
 bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
     else:
         print('[_dev testing]:')
-        bb.reconnect()
+        #bb.calibrate_mouse_scanarea()
+        bb.auto_reconnect()
 
 print('[fin.]')
+# Woomy!: (420, 390)
+# Woomy!: (1019, 506)
