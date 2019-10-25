@@ -17,7 +17,7 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = True
+_dev = False
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -572,16 +572,15 @@ class bobber_bot():
                             print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                             print('Catch count: {0}'.format(self._catch_cnt))
                             print('Miss count:  {0}'.format(self._miss_cnt))
-                            sys.exit(1)
 
                             # [Try to reconenct a few times]:
-                            #reconnected = self.auto_reconnect()
-                            #if reconnected:
-                            #   print('[Reconnected -- Starting bot back up!] 2sec..')
-                            #   time.sleep(2)
-                            #else:
-                            #   print('[Not able to reconnect, exiting] =()')
-                            #   sys.exit()
+                            reconnected = self.auto_reconnect()
+                            if reconnected:
+                               print('[Reconnected -- Starting bot back up!] 2sec..')
+                               time.sleep(2)
+                            else:
+                               print('[Not able to reconnect, exiting] =()')
+                               sys.exit()
 
                     # [Cast Pole!]:
                     self.cast_pole()
@@ -862,7 +861,7 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_mouse_scanarea()
                 self.stop()
 
-        #'''
+        '''
         # [Mouse-override for `_dev` testing]:
         if button==2 and press and _dev==True:
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
@@ -870,24 +869,19 @@ class mouse_calibrator(PyMouseEvent):
             nemo = bb.sp.save_square(top=int_y,left=int_x,square_width=100,mod=2,center=False)
             imageio.imwrite('calibrate_login.png', nemo)
             self.stop()
-        #'''
+        '''
 
 # DLMS took care of most of my problems..
 # Take catch/miss count for every hour to datamine how often threshold changes
 # [0]: finish scanarea / translate _bobber_coords to rect.
-# [1]: Change thresh bobber to look for rect of bobber rather than save_squae
-# [2]: disconnect/reconnect code. Thresh login to see if help/okay box (esc) or enter fields.
-# [3]: Check for character selection screen?
-# [4]: Check for death?
+# [1]: Change thresh bobber to look for rect of bobber rather than save_square
+# [2]: Check for death upon login?
 bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
     else:
         print('[_dev testing]:')
-        #bb.calibrate_mouse_scanarea()
-        bb.auto_reconnect()
+        bb.calibrate_mouse_scanarea()
 
 print('[fin.]')
-# Woomy!: (420, 390)
-# Woomy!: (1019, 506)
