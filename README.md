@@ -5,11 +5,10 @@ This bot is (more or less) finished now! I achieved pretty solid tracking once H
 (The script will step you through configuration the first time it runs -- you want only the bobber/tooltip to be selected in white)
 I've been bringing in bag fulls of fish a night and just kicking back making improvements. =]
 
-I'm *pretty sure* this only works on OSX right now, however `ScreenPixel.capture()`  is the only function that I think would need to be re-written for Windows, as it's using optimized screen grab code for OSX right now. (Sorry Windows, yall got all the cool C hooks, so there is plenty of code you can use for this -- send me a Pull Request :P)
 
-The other thing that might throw things into upheaval is if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% Render Scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
+One of two things that might throw things into upheaval is.. if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% Render Scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
 
-One last note.. `listen_splash()` is using the speaker's output to detect the sound of the splash -- This takes some setup (with Soundflower on OSX) or by creating a Mixer on windows.. I will honestly have to do more research/post better steps for this later. 
+The other tricky part is setting up the sound.. `listen_splash()` is using the speaker's output to detect the sound of the splash -- This takes some setup (with Soundflower on OSX) or by creating a Mixer on windows.. I will honestly have to do more research/post better steps for this later. 
 _If you don't want to use the speakers input, you can optionally use the mic from say, your macbook, but tbh I found this super annoying._
 
 

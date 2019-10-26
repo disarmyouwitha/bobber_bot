@@ -492,12 +492,16 @@ class bobber_bot():
     # We have determined that we have disconnected.. How to reconnect?
     def reconnect(self):
         login_clear = self.check_login()
-        print(login_clear)
-        
+
         if login_clear:
             if os.path.isfile('configs/pass.txt'):
                 with open('configs/pass.txt') as f:
                     _pass = f.read().strip()
+
+                    # [Clear login from casting attempts]:
+                    for x in range(0, self._timeout_cnt):
+                        pyautogui.press('backspace')
+
                     # [Enter password]:
                     pyautogui.typewrite(_pass)
                     pyautogui.press('enter')
@@ -520,13 +524,12 @@ class bobber_bot():
 
     # [Try to clear disconnect messages and reconnect 3 times]:
     def auto_reconnect(self):
-        for x in range(0,2):
-            print(x)
-            reconnected = self.reconnect()
-            print('reconnected: '.format(reconnected))
-            if reconnected==1:
+        for x in range(0,3):
+            _reconnected = self.reconnect()
+            if _reconnected==1:
                 print('[Reconnected!!]')
                 break
+        return _reconnected
 
     def is_dead(self):
         print('OooOoOoooOooo')
@@ -567,7 +570,7 @@ class bobber_bot():
                     elif self._splash_detected == False and self._timer_start is not None:
                         self._miss_cnt+=1
                         self._timeout_cnt+=1
-                        if self._timeout_cnt >= 20:
+                        if self._timeout_cnt >= 10:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
                             print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
                             print('Catch count: {0}'.format(self._catch_cnt))
@@ -579,7 +582,7 @@ class bobber_bot():
                                print('[Reconnected -- Starting bot back up!] 2sec..')
                                time.sleep(2)
                             else:
-                               print('[Not able to reconnect, exiting] =()')
+                               print('[Not able to reconnect, exiting] =(')
                                sys.exit()
 
                     # [Cast Pole!]:
@@ -876,6 +879,7 @@ class mouse_calibrator(PyMouseEvent):
 # [0]: finish scanarea / translate _bobber_coords to rect.
 # [1]: Change thresh bobber to look for rect of bobber rather than save_square
 # [2]: Check for death upon login?
+# [3]: Finish Windows Implementation
 bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
