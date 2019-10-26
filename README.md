@@ -5,9 +5,10 @@ This bot is (more or less) finished now! I achieved pretty solid tracking once H
 (The script will step you through configuration the first time it runs -- you want only the bobber/tooltip to be selected in white)
 I've been bringing in bag fulls of fish a night and just kicking back making improvements. =]
 
-One thing that might throw things into upheaval is if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% Render Scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
 
-One last note.. `listen_splash()` is using the speaker's output to detect the sound of the splash -- This takes some setup (with Soundflower(opensource<3 does this mean I can include the installer in my repo?(I will have to check on this..)) on OSX) or by creating a Mixer on windows.. I will honestly have to do more research/post better steps for this later. 
+One of two things that might throw things into upheaval is.. if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% Render Scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to change if you aren't using 50% render scale)
+
+The other tricky part is setting up the sound.. `listen_splash()` is using the speaker's output to detect the sound of the splash -- This takes some setup (with Soundflower on OSX) or by creating a Mixer on windows.. I will honestly have to do more research/post better steps for this later. 
 _If you don't want to use the speakers input, you can optionally use the mic from say, your macbook, but tbh I found this super annoying._
 
 
@@ -32,16 +33,32 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 
 # [Python3 modules used]:
+
+# OSX:
 > brew install python3
-
 > brew install portaudio
+> python3 -m pip install pyaudio
+> ^(OSX, install python3, install portaudio)
 
-> python3 -m pip install mss # For Windows implementation
-> ^(OSX uses Quartz for a lower level hook): capture_osx: 18.55ms ~vs~ capture_mss: 34.84ms 
+> https://github.com/mattingalls/Soundflower  **Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
+> https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
+> ^ (OSX, DMG for installing, definitely preferred)
+
+# WINDOWS:
+> https://www.python.org/downloads/release/python-375/
+> https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe
+> ^(Download Python 3.7.5)
+
+> https://github.com/intxcc/pyaudio_portaudio/releases/tag/1.1.1
+> ^(Download pre-compiled py/port_audtio)
+
+> python3 -m pip install mss
+> ^(WINDOWS)
+
+# BOTH NEED:
+> python3 -m pip install numpy
 
 > python3 -m pip install imageio
-
-> python3 -m pip install pyaudio
 
 > python3 -m pip install playsound
 
@@ -49,8 +66,6 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > python3 -m pip install PyUserInput
 
-> python3 -m pip install opencv-python
+> python3 -m pip install scikit-image
 
-> https://github.com/mattingalls/Soundflower  **Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
-> https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
-> ^ (DMG for installing, definitely preferred)
+> python3 -m pip install opencv-python

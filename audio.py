@@ -40,13 +40,13 @@ def listen_splash(threshold):
 
     #dev_idx = 0 # Microphone as input
     dev_idx = 2 # Speakers as input
-    if dev_idx > 0:
-        print('[Listening| Go cast your pole in WOW and see if it detects the sound of the splash]')
-        stream = p.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, input_device_index=dev_idx, frames_per_buffer=CHUNK)
-    else:
-        print('Listening|(Mic?): Make some noise to see if it registers -- play with the threshold here')
-        stream = p.open(format=pyaudio.paInt16, channels=1, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
+    # [Windows fork of pyaudio allows us to call speakers as loopback device]:
+    if sys.platform == 'darwin':
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=CHUNK, input_device_index=dev_idx)
+    else:
+        #stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=CHUNK, input_device_index=dev_idx, as_loopback=True)
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=CHUNK, input_device_index=dev_idx)
     try:
         _splash_detected = False
         while _timer_elapsed < 30 and _splash_detected==False:

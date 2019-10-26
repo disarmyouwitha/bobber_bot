@@ -1,2 +1,4 @@
 .DS_Store
-config_*.txt
+configs/pass.txt
+configs/*.json
+*.png

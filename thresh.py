@@ -9,6 +9,7 @@ import imageio
 import pyautogui
 import playsound
 import contextlib
+import skimage.metrics
 from pymouse import PyMouseEvent
 # [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
 if sys.platform == 'darwin':
@@ -36,6 +37,8 @@ class ScreenPixel(object):
     _numpy = None
     _width = None
     _height = None
+    _scanarea_stop = None
+    _scanarea_start = None
     _thresh_cnt = 0
 
     # [Threshold Presets]:
@@ -106,6 +109,27 @@ class ScreenPixel(object):
         # [Trim _numpy array to screen_fast]:
         return self._numpy[starty:starty+cropy,startx:startx+cropx]
 
+    # [To facilitate grabbing Scan Area]:
+    def save_rect(self, json_coords_start, json_coords_stop, mod=2):
+        _start_x = json_coords_start.get('x')
+        _start_y = json_coords_start.get('y')
+        start_x = (_start_x*mod)
+        start_y = (_start_y*mod)
+
+        _stop_x = json_coords_stop.get('x')
+        _stop_y = json_coords_stop.get('y')
+        stop_x = (_stop_x*mod)
+        stop_y = (_stop_y*mod)
+
+        top_start = start_y
+        top_stop = stop_y
+        left_start = start_x
+        left_stop = stop_x
+
+        # [Trim _numpy array to rect]:
+        return self._numpy[start_y:stop_y,start_x:stop_x]
+
+    # Square is a type of rectangle.. might not need this / might re-write to call save_rect?
     def save_square(self, top, left, square_width=100, mod=2, center=False):
         top = (top*mod)
         left = (left*mod)
@@ -131,7 +155,7 @@ class ScreenPixel(object):
             left_start = 0
         left_stop = (left_start+square_width)
 
-        # [Trim _numpy array to numpy_square]:
+        # [Trim _numpy array to square]:
         return self._numpy[top_start:top_stop,left_start:left_stop]
 
     def nothing(self, x):
@@ -171,6 +195,7 @@ class ScreenPixel(object):
             # [Capture of calibration image]:
             self.capture()
             if screen=='bobber':
+                #nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2) # MOD2?? xD
                 nemo = self.screen_fast(.5)
                 nemo = self.resize_image(nemo, scale_percent=50)
                 lower_hsv = self.bobber_lower_hsv
@@ -291,6 +316,7 @@ class ScreenPixel(object):
     def thresh_image(self, screen='bobber'):
         self.capture()
         if screen=='bobber':
+            #nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2) # MOD2?? xD
             nemo = self.screen_fast(.5)
             nemo = self.resize_image(nemo, scale_percent=50)
             lower_hsv = self.bobber_lower_hsv
@@ -317,19 +343,23 @@ class ScreenPixel(object):
 def audio_callback(in_data, frame_count, time_info, status):
     try:
         data = numpy.frombuffer(in_data ,dtype=numpy.int16)
-        peak = numpy.average(numpy.abs(data))*2
-        peak = int(peak)
-        
-        if peak > bb._audio_threshold and bb._splash_detected==False:
-            bb._splash_detected = True
 
-            if bb._timer_start is not None:
+        # [Waits for bot to start before listening for audio]:
+        if bb._timer_start is not None:
+            
+            peak = numpy.average(numpy.abs(data))*2
+            peak = int(peak)
+
+            if peak > bb._audio_threshold and bb._splash_detected==False:
                 if bb._bobber_found:
                     #print('Splash detected, with bobber: {0}'.format(peak))
-                    self._catch_cnt+=1
+                    bb._catch_cnt+=1
                 else:
                     #print('Splash detected, no bobber: {0}'.format(peak))
-                    self._miss_cnt+=1
+                    bb._miss_cnt+=1
+
+                bb._splash_detected=True
+                bb._bobber_reset=True
 
         return data, pyaudio.paContinue
 
@@ -339,10 +369,16 @@ def audio_callback(in_data, frame_count, time_info, status):
         bb._audio_stream.close()
         bb.pa.terminate()
 
-        # [Die Young, Leave beautiful code]:
-        print('[Bye]')
-        sys.exit(1)
+        # [Die Young && Leave beautiful code]:
+        print('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
+        print('Catch count: {0}'.format(bb._catch_cnt))
+        print('Miss count:  {0}'.format(bb._miss_cnt))
 
+        _exit = input('[Do you wish to exit?]')
+        _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
+        if _exit:
+            print('[Bye!]')
+            sys.exit(1)
 
 class bobber_bot():
     # [Included Classes]:
@@ -355,6 +391,7 @@ class bobber_bot():
     _count_cnt = 0
     _fishing = True
     _timeout_cnt = 0
+    _bot_start = None
     _timer_start = None
     _timer_elapsed = 30
     _audio_stream = None
@@ -362,17 +399,20 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
+    _scanarea_stop = None
+    _scanarea_start = None
     _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
 
+    #"/Applications/World of Warcraft/_classic_/Logs/WoWChatLog.txt"
+    
     # [BobberBot Settings]:
-    _use_baubles = True
-    _use_auto_sell = False
-    _use_mouse_mode = False
-    _use_chatty_mode = False
+    _use_baubles = False
+    _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
+    _use_chatty_mode = False # Uses (private)channel chat, rather than python console, for bot output. /join bobberbot. /4
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -382,21 +422,19 @@ class bobber_bot():
     def setup_audio(self):
         dev_idx = 0 # Microphone as input
         dev_idx = 2 # Speakers as input
-        if dev_idx > 0:
+        # ^ System Dependant, use audio.py to configure
+
+        # [Windows fork of pyaudio allows us to call speakers as loopback device]:
+        if sys.platform == 'darwin':
             self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
         else:
-            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, stream_callback=audio_callback)
+            #self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback, as_loopback=True)
+            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
 
     def cast_pole(self):
         # [Check to apply bauble]:
         if self._use_baubles:
             self.bauble_check()
-
-        # [Check to see if we should sell fish]:
-        if self._use_auto_sell:
-            # [Until we are able to determine when bags are full]:
-            if self._catch_cnt > 600:
-                self.sell_fish('Stuart Fleming')
 
         self._timer_elapsed = 0
         self._timer_start = time.time()
@@ -409,9 +447,10 @@ class bobber_bot():
             pyautogui.typewrite('8')
 
         time.sleep(3) # Wait so that we don't try and find old bobber as it fades (? needed now?)
-        self._bobber_reset=True
+        self._bobber_reset = True
         self._bobber_found = False
         self._splash_detected = False
+        self._count_cnt = 0
 
     def bauble_check(self):
         if self._splash_detected:
@@ -431,7 +470,75 @@ class bobber_bot():
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
+    def check_login(self):
+        #[Capture Login Rect]:
+        print('[Checking for login screen / Checking for disconnect] 2sec..')
+        time.sleep(2)
+        self.sp.capture()
+        _draw_rect_start = {"x": 420, "y": 394}
+        _draw_rect_stop = {"x": 1013, "y": 673}
+        nemo = self.sp.save_rect(_draw_rect_start, _draw_rect_stop, mod=2)
+
+        # [Convert images to grayscale]:
+        gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+        gray_control = imageio.imread('img/login_control_gray.png')
+
+        (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
+        #diff = (diff * 255).astype("uint8")
+
+        print("SSIM: {}".format(score))
+        return True if (score > .90) else False
+
+    # We have determined that we have disconnected.. How to reconnect?
+    def reconnect(self):
+        login_clear = self.check_login()
+
+        if login_clear:
+            if os.path.isfile('configs/pass.txt'):
+                with open('configs/pass.txt') as f:
+                    _pass = f.read().strip()
+
+                    # [Clear login from casting attempts]:
+                    for x in range(0, self._timeout_cnt):
+                        pyautogui.press('backspace')
+
+                    # [Enter password]:
+                    pyautogui.typewrite(_pass)
+                    pyautogui.press('enter')
+
+                    # Delay(15s) for login / Hit Enter to login as character:
+                    time.sleep(15)
+                    pyautogui.press('enter')
+
+                    # [Check if bot is dead / go ahead and exit xD]:
+                    time.sleep(15)
+                    if self.is_dead():
+                        return -1
+                    else:
+                        return 1
+        else:
+            # Hit ESC to clear dialog / rather than clicking okay:
+            pyautogui.press('esc')
+
+        return 0
+
+    # [Try to clear disconnect messages and reconnect 3 times]:
+    def auto_reconnect(self):
+        for x in range(0,3):
+            _reconnected = self.reconnect()
+            if _reconnected==1:
+                print('[Reconnected!!]')
+                break
+        return _reconnected
+
+    def is_dead(self):
+        print('OooOoOoooOooo')
+        return False
+
     def start(self):
+        # [Calibrate Scan Area]:
+        self.calibrate_mouse_scanarea()
+
         # [Calibrate HSV for bobber/tooltip]:
         self.sp.calibrate_image(screen='bobber')
         self.sp.calibrate_image(screen='tooltip')
@@ -443,10 +550,8 @@ class bobber_bot():
         input('[Enter to start bot!]: (3sec delay)')
         time.sleep(3)
 
-        if self._use_chatty_mode:
-            self.ghost_chat('[Selling Fish in 3sec!]')
-        else:
-            print('[BobberBot Started]')
+        print('[BobberBot Started]')
+        self._bot_start = time.time()
 
         playsound.playsound('audio/sms_alert.mp3')
         self._audio_stream.start_stream()
@@ -457,13 +562,30 @@ class bobber_bot():
                 if self._timer_elapsed >= 30 or self._splash_detected:
                     # [Right-click if splash is detected]:
                     if self._splash_detected:
-                        pyautogui.rightClick(x=None, y=None)
+                        if self._bobber_found == False:
+                            pyautogui.rightClick(x=None, y=None)
+                        else:
+                            pyautogui.rightClick(x=self._bobber_found[1], y=self._bobber_found[0])
                         self._timeout_cnt = 0
                     elif self._splash_detected == False and self._timer_start is not None:
+                        self._miss_cnt+=1
                         self._timeout_cnt+=1
-                        if self._timeout_cnt >= 20:
+                        if self._timeout_cnt >= 10:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
-                            sys.exit(1)
+                            print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                            print('Catch count: {0}'.format(self._catch_cnt))
+                            print('Miss count:  {0}'.format(self._miss_cnt))
+
+                            # [Try to reconenct a few times]:
+                            reconnected = self.auto_reconnect()
+                            if reconnected:
+                               print('[Reconnected -- Starting bot back up!] 2sec..')
+                               time.sleep(2)
+                            else:
+                               print('[Not able to reconnect, exiting] =(')
+                               sys.exit()
+
+                    # [Cast Pole!]:
                     self.cast_pole()
                 self._timer_elapsed = (time.time() - self._timer_start)
 
@@ -476,15 +598,23 @@ class bobber_bot():
 
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
-                print('[Bye]')
 
-                # [Stop Audio Stream]:
-                self._audio_stream.stop_stream()
-                self._audio_stream.close()
-                self.pa.terminate()
+                print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                print('Catch count: {0}'.format(self._catch_cnt))
+                print('Miss count:  {0}'.format(self._miss_cnt))
 
-                # [Die Young, Leave beautiful code]:
-                sys.exit(1)
+                _exit = input('[Do you wish to exit?]:')
+                _exit = False if (_exit.lower() == 'n' or _exit.lower() == 'no') else True
+                if _exit:
+                    print('[Bye!]')
+
+                    # [Stop Audio Stream]:
+                    self._audio_stream.stop_stream()
+                    self._audio_stream.close()
+                    self.pa.terminate()
+
+                    # [Die Young, Leave beautiful code]:
+                    sys.exit(1)
 
         # [Stop Audio Stream]:
         self._audio_stream.stop_stream()
@@ -562,10 +692,53 @@ class bobber_bot():
             nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
             self._timer_elapsed = (time.time() - self._timer_start)
 
+    # [Have user calibrate location of Scan Area]:
+    def calibrate_mouse_scanarea(self):
+        # [Check for config files]:
+        config_filename = 'configs/config_mouse_scanarea.json'
+        if os.path.isfile(config_filename):
+            _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
+            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
+        else:
+            _use_calibrate_config = False
+
+        # [Calibrate mouse _coords for each action bar item used]:
+        if _use_calibrate_config == False:
+            mc = mouse_calibrator('calibrate_scanarea')
+            mc.run()
+
+        # [Load config file into globals]:
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+            self.sp._scanarea_start = configs['scanarea_start']
+            self.sp._scanarea_stop = configs['scanarea_stop']
+
+        if _use_calibrate_config == False:
+            # [Draw box around Scan Area specified with mouse]:
+            print('Pause. Drawing scan area with mouse:')
+            time.sleep(2)
+            _start_x = self.sp._scanarea_start.get('x')
+            _start_y = self.sp._scanarea_start.get('y')
+            _stop_x = self.sp._scanarea_stop.get('x')
+            _stop_y = self.sp._scanarea_stop.get('y')
+            _diff_x = (_stop_x - _start_x)
+            _diff_y = (_stop_y - _start_y)
+            pyautogui.moveTo(_start_x, _start_y, duration=1)
+            pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
+            pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
+            pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
+            pyautogui.moveTo(_start_x,_start_y, duration=1)
+
+            # [Check with user to make sure they like the scan area]:
+            _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
+            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
+            if _calibrate_good == False:
+                self.calibrate_mouse_scanarea()
+
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
         # [Check for config files]:
-        config_filename = 'configs/config_mouse_action bar.json'
+        config_filename = 'configs/config_mouse_actionbar.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Calibration config found for mouse_action bar | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -574,7 +747,7 @@ class bobber_bot():
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
-            mc = mouse_calibrator()
+            mc = mouse_calibrator('calibrate_mouse_actionbar')
             mc.run()
 
         # [Load config file into globals]:
@@ -585,20 +758,6 @@ class bobber_bot():
             self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
-
-    # [Bind `Interact Vendor` to `\` key]:
-    def sell_fish(self, vendor_name):
-        if self._use_chatty_mode:
-            self.ghost_chat('[Selling Fish in 3sec!]')
-        else:
-            print('[Selling Fish in 3sec!]')
-        time.sleep(3)
-
-        # [Target vendor and use `\` to interact with them]: (AutoVendor addon does the rest of the magic)
-        self.chat_command('/target {0}'.format(vendor_name))
-        pyautogui.press('\\') # Interact Vendor keybind
-        time.sleep(3)
-        pyautogui.press('esc')
 
     def chat_command(self, cmd):
         pyautogui.press('enter')
@@ -614,22 +773,33 @@ class bobber_bot():
 
 class mouse_calibrator(PyMouseEvent):
     _click_cnt = 0
-    action_loc = None
-    action_name = None
+    _scanarea_stop = None
+    _scanarea_start = None
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
-    _calibrating = False
+    _calibrating_scanarea = False
+    _calibrating_mouse_mode = False
 
-    def __init__(self):
+    def __init__(self, state=None):
         PyMouseEvent.__init__(self)
-        if _dev==False:
+        if state == 'calibrate_mouse_actionbar':
             print('[Calibrating fishing_pole action bar location! Alt-tab, go left-click it && come back here!]')
-            self._calibrating = True
+            self._fishing_pole_loc = None
+            self._fishing_skill_loc = None
+            self._fishing_bauble_loc = None
+            self._calibrating_mouse_mode = True
+        elif state == 'calibrate_scanarea':
+            print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
+            self._scanarea_stop = None
+            self._scanarea_start = None
+            self._calibrating_scanarea = True
+        else:
+            print('[Mouse Listening]')
 
     def save_mouse_calibration(self):
         # [Load up current configs]:
-        config_filename = 'config_mouse_actionbar.json'
+        config_filename = 'configs/config_mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -642,13 +812,26 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
-        self.stop()
+    def save_mouse_scanarea(self):
+        # [Load up current configs]:
+        config_filename = 'configs/config_mouse_scanarea.json'
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+
+        # [Update config for locations]:
+        configs.update(self._scanarea_start)
+        configs.update(self._scanarea_stop)
+
+        # [Save values back to config file to update values]:
+        with open(config_filename, 'w') as fp:
+            json.dump(configs, fp)
 
     def click(self, x, y, button, press):
         int_x = int(x)
         int_y = int(y)
 
-        if button==1 and press and self._calibrating and _dev==False:
+        # [Code for Mouse Mouse Calibration]:
+        if button==1 and press and self._calibrating_mouse_mode:
             if self._fishing_pole_loc == None:
                 self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
                 print(self._fishing_pole_loc)
@@ -663,24 +846,46 @@ class mouse_calibrator(PyMouseEvent):
                 print('Click one more time for Good Luck!')
             else:
                 print('[Ending Calibration]')
-                self._calibrating = False
+                self._calibrating_mouse_mode = False
                 self.save_mouse_calibration()
                 self.stop()
 
-        # [Mouse-override for `_dev` testing]:
-        if button==1 and press and _dev==True:
+        # [Code for Scan Area Calibration]:
+        if button==1 and self._calibrating_scanarea:
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+            if press:
+                self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
+            else:
+                self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
 
+            # [Send coords back over to bobberbot]:
+            if self._scanarea_stop is not None:
+                self._calibrating_scanarea = False
+                self.save_mouse_scanarea()
+                self.stop()
 
-# Hide UI (ALT + Z)
+        '''
+        # [Mouse-override for `_dev` testing]:
+        if button==2 and press and _dev==True:
+            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+            bb.sp.capture()
+            nemo = bb.sp.save_square(top=int_y,left=int_x,square_width=100,mod=2,center=False)
+            imageio.imwrite('calibrate_login.png', nemo)
+            self.stop()
+        '''
+
+# DLMS took care of most of my problems..
+# Take catch/miss count for every hour to datamine how often threshold changes
+# [0]: finish scanarea / translate _bobber_coords to rect.
+# [1]: Change thresh bobber to look for rect of bobber rather than save_square
+# [2]: Check for death upon login?
+# [3]: Finish Windows Implementation
 bb = bobber_bot()
 if __name__ == '__main__':
     if _dev==False:
         bb.start()
-        bb.sell_fish('Stuart Fleming')
     else:
         print('[_dev testing]:')
-        #mc = mouse_calibrator()
-        #mc.run()
+        bb.calibrate_mouse_scanarea()
 
 print('[fin.]')
