@@ -195,8 +195,7 @@ class ScreenPixel(object):
             # [Capture of calibration image]:
             self.capture()
             if screen=='bobber':
-                #nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2) # MOD2?? xD
-                nemo = self.screen_fast(.5)
+                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
                 nemo = self.resize_image(nemo, scale_percent=50)
                 lower_hsv = self.bobber_lower_hsv
                 upper_hsv = self.bobber_upper_hsv
@@ -316,8 +315,7 @@ class ScreenPixel(object):
     def thresh_image(self, screen='bobber'):
         self.capture()
         if screen=='bobber':
-            #nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2) # MOD2?? xD
-            nemo = self.screen_fast(.5)
+            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
             nemo = self.resize_image(nemo, scale_percent=50)
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
@@ -661,13 +659,7 @@ class bobber_bot():
     def _check_bobber_loc(self, _coords):
         (top, left) = _coords
 
-        y,x,_z = self.sp._numpy.shape
-        cropx = int(x*.5)
-        cropy = int(y*.5)
-        startx = (x//2-(cropx//2))
-        starty = (y//2-(cropy//2))
-
-        _coords = ((top+(starty/2)), (left+(startx/2)))
+        _coords = ((top+self.sp._scanarea_start.get('y')), (left+self.sp._scanarea_start.get('x')))
         pyautogui.moveTo(_coords[1], _coords[0], duration=0)
 
         thresh = self.sp.thresh_image(screen='tooltip')
@@ -876,8 +868,8 @@ class mouse_calibrator(PyMouseEvent):
 
 # DLMS took care of most of my problems..
 # Take catch/miss count for every hour to datamine how often threshold changes
-# [0]: finish scanarea / translate _bobber_coords to rect.
-# [1]: Change thresh bobber to look for rect of bobber rather than save_square
+# [0]: Define presets for HSV blue (0-19) && default config for scanarea should be "screen_fast(.85)"
+# [1]: Change save_square to call save_rect
 # [2]: Check for death upon login?
 # [3]: Finish Windows Implementation
 bb = bobber_bot()
