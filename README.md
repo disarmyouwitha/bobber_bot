@@ -36,37 +36,34 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 # OSX:
 > brew install python3
-> brew install portaudio
-> python3 -m pip install pyaudio
-> ^(OSX, install python3, install portaudio)
 
-> https://github.com/mattingalls/Soundflower  **Enables piping system output to virtual input (so you don't have to use the mic for splash detction)
+> brew install portaudio
+
+> python -m pip install pyaudio
+
+> install Soundflower-2.0b2.dmg from install_files (OR..)
 > https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
-> ^ (OSX, DMG for installing, definitely preferred)
 
 # WINDOWS:
-> https://www.python.org/downloads/release/python-375/
-> https://www.python.org/ftp/python/3.7.5/python-3.7.5-amd64.exe
-> ^(Download Python 3.7.5)
+> install python-3.7.5-amd64-webinstall.exefrom install_files
 
-> https://github.com/intxcc/pyaudio_portaudio/releases/tag/1.1.1
-> ^(Download pre-compiled py/port_audio)
+> install PyAudio.msi from install_files
 
 > python -m pip install mss
+
 > python -m pip install install_files/pyHook-1.5.1-cp37-cp37m-win_amd64.whl
-> ^(WINDOWS)
 
 # BOTH NEED:
-> python3 -m pip install numpy
+> python -m pip install numpy
 
-> python3 -m pip install imageio
+> python -m pip install imageio
 
-> python3 -m pip install playsound
+> python -m pip install playsound
 
-> python3 -m pip install pyautogui
+> python -m pip install pyautogui
 
-> python3 -m pip install PyUserInput
+> python -m pip install PyUserInput
 
-> python3 -m pip install scikit-image       
+> python -m pip install scikit-image       
 
-> python3 -m pip install opencv-python
+> python -m pip install opencv-python
