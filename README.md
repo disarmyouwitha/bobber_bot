@@ -53,7 +53,7 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 > ^(Download pre-compiled py/port_audtio)
 
 > python -m pip install mss
-> python -m pip install pyWinhook
+> python -m pip install install_files/pyHook-1.5.1-cp37-cp37m-win_amd64.whl
 > ^(WINDOWS)
 
 # BOTH NEED:
