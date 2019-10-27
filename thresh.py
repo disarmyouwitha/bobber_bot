@@ -12,13 +12,14 @@ import contextlib
 import skimage.metrics
 import matplotlib.pyplot as plt
 from pymouse import PyMouseEvent
+
 # [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
 if sys.platform == 'darwin':
     import Quartz.CoreGraphics as CG
 else:
     import mss
 
-_dev = True
+_dev = False
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -78,7 +79,7 @@ class ScreenPixel(object):
         #imageio.imwrite('screen.png', self._numpy)
 
     def capture_mss(self):
-        print('capture_mss')
+        #print('capture_mss')
         with mss.mss() as sct:
             # [Capture Part of the screen -- NEAT!]:
             #monitor = { "top": 100, "left": 100, "width": 160, "height": 135, "mon": 0 }
@@ -92,7 +93,7 @@ class ScreenPixel(object):
             _numpy_bgr = numpy.array(sct.grab(monitor)) #sct.grab()
             _numpy_rgb = cv2.cvtColor(_numpy_bgr, cv2.COLOR_BGR2RGB)
             self._numpy = _numpy_rgb
-            imageio.imwrite('screen_mss.png', self._numpy)
+            #simageio.imwrite('screen_mss.png', self._numpy)
 
     def resize_image(self, nemo, scale_percent=50):
         width = int(nemo.shape[1] * scale_percent / 100)
@@ -197,8 +198,11 @@ class ScreenPixel(object):
             # [Capture of calibration image]:
             self.capture()
             if screen=='bobber':
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
-                nemo = self.resize_image(nemo, scale_percent=50)
+                if sys.platform == 'darwin':
+                    nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
+                    nemo = self.resize_image(nemo, scale_percent=50)
+                else:
+                    nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
                 lower_hsv = self.bobber_lower_hsv
                 upper_hsv = self.bobber_upper_hsv
             elif screen=='tooltip':
@@ -218,23 +222,26 @@ class ScreenPixel(object):
             # [Set up window]:
             window_name = 'HSV Calibrator'
             cv2.namedWindow(window_name)
-            cv2.moveWindow(window_name, 40,30) 
+            cv2.moveWindow(window_name, 10,10) 
 
-            # [Create trackbars for Upper HSV]:
+            # [Create trackbars for Hue]:
+            cv2.createTrackbar('LowerH',window_name,0,255,self.nothing)
+            cv2.setTrackbarPos('LowerH',window_name, lh)
             cv2.createTrackbar('UpperH',window_name,0,255,self.nothing)
             cv2.setTrackbarPos('UpperH',window_name, uh)
+
+            # [Create trackbars for Saturation]:
+            cv2.createTrackbar('LowerS',window_name,0,255,self.nothing)
+            cv2.setTrackbarPos('LowerS',window_name, ls)
             cv2.createTrackbar('UpperS',window_name,0,255,self.nothing)
             cv2.setTrackbarPos('UpperS',window_name, us)
+
+            # [Create trackbars for Value]:
+            cv2.createTrackbar('LowerV',window_name,0,255,self.nothing)
+            cv2.setTrackbarPos('LowerV',window_name, lv)
             cv2.createTrackbar('UpperV',window_name,0,255,self.nothing)
             cv2.setTrackbarPos('UpperV',window_name, uv)
 
-            # [Create trackbars for Lower HSV]:
-            cv2.createTrackbar('LowerH',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('LowerH',window_name, lh)
-            cv2.createTrackbar('LowerS',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('LowerS',window_name, ls)
-            cv2.createTrackbar('LowerV',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('LowerV',window_name, lv)
             font = cv2.FONT_HERSHEY_SIMPLEX
 
             # [Alert user calibration image is ready]:
@@ -317,8 +324,11 @@ class ScreenPixel(object):
     def thresh_image(self, screen='bobber'):
         self.capture()
         if screen=='bobber':
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
-            nemo = self.resize_image(nemo, scale_percent=50)
+            if sys.platform == 'darwin':
+                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
+                nemo = self.resize_image(nemo, scale_percent=50)
+            else:
+                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
         elif screen=='tooltip':
@@ -332,7 +342,7 @@ class ScreenPixel(object):
         hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
         nemo_masked = cv2.inRange(hsv, lower_hsv, upper_hsv)
 
-        if self._thresh_cnt<0: # thresh_bobber, thresh_tooltip
+        if self._thresh_cnt<20: # thresh_bobber, thresh_tooltip
             imageio.imwrite('screen_thresh_{0}{1}.png'.format(screen,self._thresh_cnt), nemo_masked)
         self._thresh_cnt+=1
 
@@ -477,6 +487,7 @@ class bobber_bot():
         self.sp.capture()
         _draw_rect_start = {"x": 420, "y": 394}
         _draw_rect_stop = {"x": 1013, "y": 673}
+
         nemo = self.sp.save_rect(_draw_rect_start, _draw_rect_stop, mod=2)
 
         # [Convert images to grayscale]:
@@ -791,7 +802,11 @@ class mouse_calibrator(PyMouseEvent):
             self._calibrating_scanarea = True
             bb.sp.capture()
             nemo = bb.sp._numpy
-            nemo = bb.sp.resize_image(nemo, scale_percent=50)
+
+            # [Windows might need this at 50% in WoW too?]:
+            if sys.platform == 'darwin':
+                nemo = bb.sp.resize_image(nemo, scale_percent=50)
+
             cv2.imshow('Calibrate Scanarea', nemo)
             cv2.moveWindow('Calibrate Scanarea', 0,0)
         else:
@@ -818,7 +833,12 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
-        _y_offset = -80
+        # [Trying to account for differences in OSX/Windows]:
+        if sys.platform == 'darwin':
+            _y_offset = -80
+        else:
+            _y_offset = -30
+
         self._scanarea_start['scanarea_start']['y'] += _y_offset
         self._scanarea_stop['scanarea_stop']['y'] += _y_offset
 
@@ -881,7 +901,7 @@ class mouse_calibrator(PyMouseEvent):
 
 # DLMS took care of most of my problems..
 # Take catch/miss count for every hour to datamine how often threshold changes
-# [0]: Define presets for HSV blue (0-19) && default config for scanarea should be "screen_fast(.85)"
+# [0]: Default config for scanarea should be "screen_fast(.85)"
 # [1]: Change save_square to call save_rect
 # [2]: Check for death upon login?
 # [3]: Finish Windows Implementation
@@ -891,7 +911,7 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_dev testing]:')
-        #bb.calibrate_mouse_scanarea()
-        bb.sp.capture()
+        bb.calibrate_mouse_scanarea()
+        bb.sp.calibrate_image()
 
 print('[fin.]')
