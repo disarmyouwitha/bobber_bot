@@ -52,7 +52,8 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 > https://github.com/intxcc/pyaudio_portaudio/releases/tag/1.1.1
 > ^(Download pre-compiled py/port_audtio)
 
-> python3 -m pip install mss
+> python -m pip install mss
+> python -m pip install pyWinhook
 > ^(WINDOWS)
 
 # BOTH NEED:

@@ -18,7 +18,7 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = False
+_dev = True
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
 
@@ -78,6 +78,7 @@ class ScreenPixel(object):
         #imageio.imwrite('screen.png', self._numpy)
 
     def capture_mss(self):
+        print('capture_mss')
         with mss.mss() as sct:
             # [Capture Part of the screen -- NEAT!]:
             #monitor = { "top": 100, "left": 100, "width": 160, "height": 135, "mon": 0 }
@@ -91,7 +92,7 @@ class ScreenPixel(object):
             _numpy_bgr = numpy.array(sct.grab(monitor)) #sct.grab()
             _numpy_rgb = cv2.cvtColor(_numpy_bgr, cv2.COLOR_BGR2RGB)
             self._numpy = _numpy_rgb
-            #imageio.imwrite('screen_mss.png', self._numpy)
+            imageio.imwrite('screen_mss.png', self._numpy)
 
     def resize_image(self, nemo, scale_percent=50):
         width = int(nemo.shape[1] * scale_percent / 100)
@@ -891,5 +892,6 @@ if __name__ == '__main__':
     else:
         print('[_dev testing]:')
         #bb.calibrate_mouse_scanarea()
+        bb.sp.capture()
 
 print('[fin.]')
