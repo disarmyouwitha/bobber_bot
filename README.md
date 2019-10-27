@@ -50,7 +50,7 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 > ^(Download Python 3.7.5)
 
 > https://github.com/intxcc/pyaudio_portaudio/releases/tag/1.1.1
-> ^(Download pre-compiled py/port_audtio)
+> ^(Download pre-compiled py/port_audio)
 
 > python -m pip install mss
 > python -m pip install install_files/pyHook-1.5.1-cp37-cp37m-win_amd64.whl
@@ -67,6 +67,6 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > python3 -m pip install PyUserInput
 
-> python3 -m pip install scikit-image
+> python3 -m pip install scikit-image       
 
 > python3 -m pip install opencv-python
