@@ -43,8 +43,8 @@ class ScreenPixel(object):
     _thresh_cnt = 0
 
     # [Threshold Presets]:
-    bobber_lower_hsv = numpy.array([80,0,0])
-    bobber_upper_hsv = numpy.array([140,255,255])
+    bobber_lower_hsv = numpy.array([0,0,0])
+    bobber_upper_hsv = numpy.array([21,255,255])
     tooltip_lower_hsv = numpy.array([0,0,0])
     tooltip_upper_hsv = numpy.array([25,255,255])
 
