@@ -10,6 +10,7 @@ import pyautogui
 import playsound
 import contextlib
 import skimage.metrics
+import matplotlib.pyplot as plt
 from pymouse import PyMouseEvent
 # [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
 if sys.platform == 'darwin':
@@ -696,6 +697,7 @@ class bobber_bot():
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
+            # [Display picture of screen for user to click]:
             mc = mouse_calibrator('calibrate_scanarea')
             mc.run()
 
@@ -786,6 +788,11 @@ class mouse_calibrator(PyMouseEvent):
             self._scanarea_stop = None
             self._scanarea_start = None
             self._calibrating_scanarea = True
+            bb.sp.capture()
+            nemo = bb.sp._numpy
+            nemo = bb.sp.resize_image(nemo, scale_percent=50)
+            cv2.imshow('Calibrate Scanarea', nemo)
+            cv2.moveWindow('Calibrate Scanarea', 0,0)
         else:
             print('[Mouse Listening]')
 
@@ -809,6 +816,10 @@ class mouse_calibrator(PyMouseEvent):
         config_filename = 'configs/config_mouse_scanarea.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
+
+        _y_offset = -80
+        self._scanarea_start['scanarea_start']['y'] += _y_offset
+        self._scanarea_stop['scanarea_stop']['y'] += _y_offset
 
         # [Update config for locations]:
         configs.update(self._scanarea_start)
@@ -854,6 +865,7 @@ class mouse_calibrator(PyMouseEvent):
             if self._scanarea_stop is not None:
                 self._calibrating_scanarea = False
                 self.save_mouse_scanarea()
+                cv2.destroyAllWindows()
                 self.stop()
 
         '''
@@ -878,6 +890,6 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_dev testing]:')
-        bb.calibrate_mouse_scanarea()
+        #bb.calibrate_mouse_scanarea()
 
 print('[fin.]')
