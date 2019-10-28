@@ -17,8 +17,10 @@ The other tricky part is setting up the sound.. `audio_callback()` is using the 
 
 > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
 
-> The bot will cast `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
+> *The bot will cast `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`*
+
 > ^(Optionally, you can enable `_use_baubles=True` to cast baubles every 10min: `Baubles on "9"` )
+
 > ^(Optionally, you can enable `_use_mouse_mode=True` to only use the mouse for fishing actions and it will walk you through calibration -- allowing you to type to your guild, etc, if you are a chatter-bug like me =3)
 
 > ^(Optionally, if you create a `pass.txt` under the configs directory, the bot will try to log you in with this password when it believes that it's been disconnected) ((This works on my client, will have to test for others))

@@ -98,20 +98,11 @@ class ScreenPixel(object):
         nemo_scaled = cv2.resize(nemo, dim, interpolation = cv2.INTER_AREA)
         return nemo_scaled 
 
-    def screen_fast(self, _limit=.85):
-        y,x,_z = self._numpy.shape
-        cropx = int(x*_limit)
-        cropy = int(y*_limit)
-        startx = (x//2-(cropx//2))
-        starty = (y//2-(cropy//2))
-
-        # [Trim _numpy array to screen_fast]:
-        return self._numpy[starty:starty+cropy,startx:startx+cropx]
-
     # [To facilitate grabbing Scan Area]:
     def save_rect(self, json_coords_start, json_coords_stop, mod=2):
         _start_x = json_coords_start.get('x')
         _start_y = json_coords_start.get('y')
+
         start_x = (_start_x*mod)
         start_y = (_start_y*mod)
 
@@ -153,6 +144,11 @@ class ScreenPixel(object):
         if left_start < 0:
             left_start = 0
         left_stop = (left_start+square_width)
+
+        print('top_start: {0}'.format(top_start))
+        print('top_stop: {0}'.format(top_stop))
+        print('left_start: {0}'.format(left_start))
+        print('left_stop: {0}'.format(left_stop))
 
         # [Trim _numpy array to square]:
         return self._numpy[top_start:top_stop,left_start:left_stop]
@@ -208,6 +204,8 @@ class ScreenPixel(object):
                 else:
                     nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=1)
                 '''
+
+                #nemo = self.save_rect({"x":1720, "y": 880}, {"x":1920, "y": 1080}, mod=2)
                 nemo = self.save_square(top=725,left=1300,square_width=100,mod=2,center=False)
                 lower_hsv = self.tooltip_lower_hsv
                 upper_hsv = self.tooltip_upper_hsv
@@ -340,6 +338,8 @@ class ScreenPixel(object):
             else:
                 nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=1)
             '''
+
+            #nemo = self.save_rect({"x":1720, "y": 880}, {"x":1920, "y": 1080}, mod=2)
             nemo = self.save_square(top=725,left=1300,square_width=100)
             lower_hsv = self.tooltip_lower_hsv
             upper_hsv = self.tooltip_upper_hsv
@@ -417,16 +417,12 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
-    #_scanarea_stop = None
-    #_scanarea_start = None
     _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
 
-    #"/Applications/World of Warcraft/_classic_/Logs/WoWChatLog.txt"
-    
     # [BobberBot Settings]:
     _use_baubles = False
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
@@ -609,7 +605,6 @@ class bobber_bot():
                     _bobber_coords = self.find_bobber()
                     if _bobber_coords != 0:
                         self._bobber_found = _bobber_coords
-                        #self.track_bobber(_bobber_coords) # Track bobber for 30seconds, taking screenshots
 
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
@@ -694,13 +689,6 @@ class bobber_bot():
 
         return 0
 
-    # [Track bobber for 30 seconds, taking pictures]:
-    def track_bobber(self, _bobber_coords):
-        while self._timer_elapsed < 30:
-            self.sp.capture()
-            nemo = self.sp.save_square(top=_bobber_coords[0], left=_bobber_coords[1], square_width=100, mod=2, center=True)
-            self._timer_elapsed = (time.time() - self._timer_start)
-
     # [Have user calibrate location of Scan Area]:
     def calibrate_mouse_scanarea(self, screen='scanarea'):
         # [Check for config files]:
@@ -735,10 +723,6 @@ class bobber_bot():
                 self.sp._tooltip_stop = configs['tooltip_stop']
 
         if _use_calibrate_config == False:
-            # [Draw box around Scan Area specified with mouse]:
-            print('Pause. Drawing scan area with mouse:')
-            time.sleep(2)
-
             if screen=='scanarea':
                 _start_x = self.sp._scanarea_start.get('x')
                 _start_y = self.sp._scanarea_start.get('y')
@@ -750,6 +734,10 @@ class bobber_bot():
                 _stop_x = self.sp._tooltip_stop.get('x')
                 _stop_y = self.sp._tooltip_stop.get('y')
 
+            # [Draw box around Scan Area specified with mouse]:
+            print('Pause. Drawing scan area with mouse:')
+            time.sleep(2)
+
             _diff_x = (_stop_x - _start_x)
             _diff_y = (_stop_y - _start_y)
             pyautogui.moveTo(_start_x, _start_y, duration=1)
@@ -757,6 +745,11 @@ class bobber_bot():
             pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
             pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
             pyautogui.moveTo(_start_x,_start_y, duration=1)
+
+            # [Screenshot for debugging]:
+            self.sp.capture()
+            nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
+            imageio.imwrite('calibrate_tooltip.png', nemo)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
@@ -830,13 +823,15 @@ class mouse_calibrator(PyMouseEvent):
             time.sleep(3)
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
             bb.sp.capture()
-            nemo = bb.sp._numpy
+            # [Displays bottom half, right side of screen for tooltip calibration]:
+            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=1) # MOD 2
 
             # [Windows might need this at 50% in WoW too?]:
-            if sys.platform == 'darwin':
-                nemo = bb.sp.resize_image(nemo, scale_percent=50)
+            #if sys.platform == 'darwin':
+            #    nemo = bb.sp.resize_image(nemo, scale_percent=50)
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
+            #imageio.imwrite('cali_tool.png', nemo)
         else:
             print('[Mouse Listening]')
 
@@ -861,15 +856,23 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
-        if self._calibrating_scanarea:
-            # [Trying to account for differences in OSX/Windows]:
-            if sys.platform == 'darwin':
-                _y_offset = -80
-            else:
-                _y_offset = -30
+        # [Trying to account for differences in OSX/Windows]:
+        if sys.platform == 'darwin':
+            _y_offset = -80
+        else:
+            _y_offset = -30
 
+        if self._calibrating_scanarea:
             self._scanarea_start['scanarea_start']['y'] += _y_offset
             self._scanarea_stop['scanarea_stop']['y'] += _y_offset
+        elif self._calibrating_tooltip:
+            self._tooltip_start['tooltip_start']['y'] += _y_offset # _y_offset
+            self._tooltip_stop['tooltip_stop']['y'] += _y_offset # _y_offset
+            self._tooltip_start['tooltip_start']['y'] += int(bb.sp._height/2)
+            self._tooltip_start['tooltip_start']['x'] += int(bb.sp._width/2)
+            self._tooltip_stop['tooltip_stop']['y'] += int(bb.sp._height/2)
+            self._tooltip_stop['tooltip_stop']['x'] += int(bb.sp._width/2)
+            # ^(Tooltip calibration starts from lower half, right half)
 
         # [Update config for locations]:
         if self._calibrating_scanarea:
@@ -936,19 +939,19 @@ class mouse_calibrator(PyMouseEvent):
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
         '''
 
+# [3]: Change tooltip_calibration to clip the rect rather than hardcoded save_square.
+#    > Change tooltip_check to SSIM?
 # [-]: Code cleanup.
 # [0]: Set config/variables for `fishing skill, fishing pole, baubles`
 # [0]: Set reasonable defaults for config/* files for Master
 # [1]: Change save_square to call save_rect
 # [2]: Check for death upon login?
-# [3]: Change tooltip_calibration to clip the rect rather than hardcoded save_square.
-#    > Change tooltip_check to SSIM?
 # [4]: Ability to recalibrate during loop
 # [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands.
 #    > ability to start/stop fishing, etc
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = False
+    _DEV = True
     if _DEV==False:
         bb.start()
     else:
@@ -956,3 +959,4 @@ if __name__ == '__main__':
         bb.calibrate_mouse_scanarea('tooltip')
 
 print('[fin.]')
+
