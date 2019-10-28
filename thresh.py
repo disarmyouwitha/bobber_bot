@@ -661,6 +661,22 @@ class bobber_bot():
                 break
         return 0
 
+    def check_tooltip(self):
+        self.sp.capture()
+        nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1) # MOD
+
+        # [Convert images to grayscale]:
+        gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+        gray_control = imageio.imread('img/tooltip_control_gray.png')
+        #orig_control = imageio.imread('tooltip_control.png')
+        #gray_control = cv2.cvtColor(orig_control, cv2.COLOR_BGR2GRAY)
+        imageio.imwrite('tooltip_test_gray.png', gray_test)
+
+        (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
+
+        print("SSIM: {}".format(score))
+        return True if (score > .90) else False
+
     # [Move mouse to _coords /capture/ check for tooltip]:
     def _check_bobber_loc(self, _coords):
         (top, left) = _coords
@@ -668,6 +684,7 @@ class bobber_bot():
         _coords = ((top+self.sp._scanarea_start.get('y')), (left+self.sp._scanarea_start.get('x')))
         pyautogui.moveTo(_coords[1], _coords[0], duration=0)
 
+        #'''
         thresh = self.sp.thresh_image(screen='tooltip')
         tooltip_top = 20
         tooltip_left = 15
@@ -680,6 +697,10 @@ class bobber_bot():
 
         if _tooltip_check >= 1:
             return _coords
+        #'''
+
+        #if self.check_tooltip():
+        #    return _coords
 
         return 0
 
@@ -950,6 +971,7 @@ if __name__ == '__main__':
     else:
         print('[_DEV testing]:')
         bb.calibrate_mouse_scanarea('tooltip')
+        print(bb.check_tooltip())
 
 print('[fin.]')
 
