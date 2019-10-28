@@ -712,7 +712,11 @@ class bobber_bot():
         # [Check for config files]:
         config_filename = 'configs/config_mouse_scanarea.json'
         if os.path.isfile(config_filename):
-            _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
+            if screen=='scanarea':
+                _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
+            else:
+                _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
+
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             _use_calibrate_config = False
@@ -729,10 +733,12 @@ class bobber_bot():
         # [Load config file into globals]:
         with open(config_filename) as config_file:
             configs = json.load(config_file)
-            self.sp._scanarea_start = configs['scanarea_start']
-            self.sp._scanarea_stop = configs['scanarea_stop']
-            self.sp._tooltip_start = configs['tooltip_start']
-            self.sp._tooltip_stop = configs['tooltip_stop']
+            if screen=='scanarea':
+                self.sp._scanarea_start = configs['scanarea_start']
+                self.sp._scanarea_stop = configs['scanarea_stop']
+            else:
+                self.sp._tooltip_start = configs['tooltip_start']
+                self.sp._tooltip_stop = configs['tooltip_stop']
 
         if _use_calibrate_config == False:
             # [Draw box around Scan Area specified with mouse]:
@@ -797,7 +803,7 @@ class mouse_calibrator(PyMouseEvent):
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
-    _calibrate_tooltip = False
+    _calibrating_tooltip = False
     _calibrating_scanarea = False
     _calibrating_mouse_mode = False
 
@@ -814,22 +820,28 @@ class mouse_calibrator(PyMouseEvent):
             self._scanarea_stop = None
             self._scanarea_start = None
             self._calibrating_scanarea = True
-            bb.sp.capture()
-            nemo = bb.sp._numpy
-        elif state == 'calibrate_tooltip':
-            print('[Calibrating Scan Area: Click at the top-left of the tooltip, && drag to lower-right and release.]')
-            self._tooltip_stop = None
-            self._tooltip_start = None
-            self._calibrate_tooltip = True
+            print(self._calibrating_scanarea)
             bb.sp.capture()
             nemo = bb.sp._numpy
 
             # [Windows might need this at 50% in WoW too?]:
             if sys.platform == 'darwin':
                 nemo = bb.sp.resize_image(nemo, scale_percent=50)
-
             cv2.imshow('Calibrate Scanarea', nemo)
             cv2.moveWindow('Calibrate Scanarea', 0,0)
+        elif state == 'calibrate_tooltip':
+            print('[Calibrating Tooltip: Click at the top-left of the tooltip, && drag to lower-right and release.]')
+            self._tooltip_stop = None
+            self._tooltip_start = None
+            self._calibrating_tooltip = True
+            bb.sp.capture()
+            nemo = bb.sp._numpy
+
+            # [Windows might need this at 50% in WoW too?]:
+            if sys.platform == 'darwin':
+                nemo = bb.sp.resize_image(nemo, scale_percent=50)
+            cv2.imshow('Calibrate Tooltip', nemo)
+            cv2.moveWindow('Calibrate Tooltip', 0,0)
         else:
             print('[Mouse Listening]')
 
@@ -848,13 +860,13 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
-    def save_mouse_scanarea(self, state='calibrate_scanarea'):
+    def save_mouse_scanarea(self):
         # [Load up current configs]:
         config_filename = 'configs/config_mouse_scanarea.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
-        if state == 'calibrate_scanarea':
+        if self._calibrating_scanarea:
             # [Trying to account for differences in OSX/Windows]:
             if sys.platform == 'darwin':
                 _y_offset = -80
@@ -865,10 +877,12 @@ class mouse_calibrator(PyMouseEvent):
             self._scanarea_stop['scanarea_stop']['y'] += _y_offset
 
         # [Update config for locations]:
-        configs.update(self._scanarea_start)
-        configs.update(self._scanarea_stop)
-        configs.update(self._tooltip_start)
-        configs.update(self._tooltip_stop)
+        if self._calibrating_scanarea:
+            configs.update(self._scanarea_start)
+            configs.update(self._scanarea_stop)
+        elif self._calibrating_tooltip:
+            configs.update(self._tooltip_start)
+            configs.update(self._tooltip_stop)
 
         # [Save values back to config file to update values]:
         with open(config_filename, 'w') as fp:
@@ -899,24 +913,25 @@ class mouse_calibrator(PyMouseEvent):
                 self.stop()
 
         # [Code for Scan Area Calibration]:
-        if button==1 and (self._calibrating_scanarea or self._calibrate_tooltip):
+        if button==1 and (self._calibrating_scanarea or self._calibrating_tooltip):
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
 
             if press:
                 if self._calibrating_scanarea:
                     self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
-                else: 
+                elif self._calibrating_tooltip:
                     self._tooltip_start = {"tooltip_start" : { "x":int_x, "y":int_y }}
             else:
                 if self._calibrating_scanarea:
                     self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
-                else:
+                elif self._calibrating_tooltip:
                     self._tooltip_stop = {"tooltip_stop" : { "x":int_x, "y":int_y }}
 
             # [Send coords back over to bobberbot]:
             if self._scanarea_stop is not None or self._tooltip_stop is not None:
-                self._calibrating_scanarea = False
                 self.save_mouse_scanarea()
+                self._calibrating_scanarea = False
+                self._calibrating_tooltip = False
                 cv2.destroyAllWindows()
                 self.stop()
 
