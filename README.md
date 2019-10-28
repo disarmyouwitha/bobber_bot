@@ -31,6 +31,10 @@ _If you don't want to use the speakers input, you can optionally use the mic fro
 
 > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
 
+# [HIGHLY RECOMMENDED]:
+# DLMS took care of most of my problems..
+# DOWNLOAD ADDON: https://www.warcrafttavern.com/addons/dlms-dynamic-loot-management-system/
+> I use this, rather than autosell, to blacklist trash fish that would otherwise fill up my inventory.
 
 # [Python3 modules used]:
 

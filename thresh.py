@@ -39,8 +39,10 @@ class ScreenPixel(object):
     _numpy = None
     _width = None
     _height = None
-    _scanarea_stop = None
     _scanarea_start = None
+    _scanarea_stop = None
+    _tooltip_start = None
+    _tooltip_stop = None
     _thresh_cnt = 0
 
     # [Threshold Presets]:
@@ -206,6 +208,12 @@ class ScreenPixel(object):
                 lower_hsv = self.bobber_lower_hsv
                 upper_hsv = self.bobber_upper_hsv
             elif screen=='tooltip':
+                '''
+                if sys.platform == 'darwin':
+                    nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=2)
+                else:
+                    nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=1)
+                '''
                 nemo = self.save_square(top=725,left=1300,square_width=100,mod=2,center=False)
                 lower_hsv = self.tooltip_lower_hsv
                 upper_hsv = self.tooltip_upper_hsv
@@ -332,6 +340,12 @@ class ScreenPixel(object):
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
         elif screen=='tooltip':
+            '''
+            if sys.platform == 'darwin':
+                nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=2)
+            else:
+                nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=1)
+            '''
             nemo = self.save_square(top=725,left=1300,square_width=100)
             lower_hsv = self.tooltip_lower_hsv
             upper_hsv = self.tooltip_upper_hsv
@@ -409,8 +423,8 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
-    _scanarea_stop = None
-    _scanarea_start = None
+    #_scanarea_stop = None
+    #_scanarea_start = None
     _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
@@ -422,7 +436,6 @@ class bobber_bot():
     # [BobberBot Settings]:
     _use_baubles = False
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
-    _use_chatty_mode = False # Uses (private)channel chat, rather than python console, for bot output. /join bobberbot. /4
 
     def __init__(self):
         self.sp = ScreenPixel()
@@ -430,16 +443,13 @@ class bobber_bot():
         self.setup_audio()
 
     def setup_audio(self):
-        dev_idx = 0 # Microphone as input
-        dev_idx = 1 # Speakers as input
-        # ^ System Dependant, use audio.py to configure
-
-        # [Windows fork of pyaudio allows us to call speakers as loopback device]:
         if sys.platform == 'darwin':
-            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+            dev_idx = 2 # For my OSX machine it's 2, might be different for you
         else:
-            #self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback, as_loopback=True)
-            self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+            dev_idx = 1 # For my windows machine it's 1, might be different for you
+        # ^(System Dependant, use audio.py to configure)
+
+        self._audio_stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
 
     def cast_pole(self):
         # [Check to apply bauble]:
@@ -698,7 +708,7 @@ class bobber_bot():
             self._timer_elapsed = (time.time() - self._timer_start)
 
     # [Have user calibrate location of Scan Area]:
-    def calibrate_mouse_scanarea(self):
+    def calibrate_mouse_scanarea(self, screen='scanarea'):
         # [Check for config files]:
         config_filename = 'configs/config_mouse_scanarea.json'
         if os.path.isfile(config_filename):
@@ -710,7 +720,10 @@ class bobber_bot():
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
             # [Display picture of screen for user to click]:
-            mc = mouse_calibrator('calibrate_scanarea')
+            if screen=='scanarea':
+                mc = mouse_calibrator('calibrate_scanarea')
+            else:
+                mc = mouse_calibrator('calibrate_tooltip')
             mc.run()
 
         # [Load config file into globals]:
@@ -718,15 +731,25 @@ class bobber_bot():
             configs = json.load(config_file)
             self.sp._scanarea_start = configs['scanarea_start']
             self.sp._scanarea_stop = configs['scanarea_stop']
+            self.sp._tooltip_start = configs['tooltip_start']
+            self.sp._tooltip_stop = configs['tooltip_stop']
 
         if _use_calibrate_config == False:
             # [Draw box around Scan Area specified with mouse]:
             print('Pause. Drawing scan area with mouse:')
             time.sleep(2)
-            _start_x = self.sp._scanarea_start.get('x')
-            _start_y = self.sp._scanarea_start.get('y')
-            _stop_x = self.sp._scanarea_stop.get('x')
-            _stop_y = self.sp._scanarea_stop.get('y')
+
+            if screen=='scanarea':
+                _start_x = self.sp._scanarea_start.get('x')
+                _start_y = self.sp._scanarea_start.get('y')
+                _stop_x = self.sp._scanarea_stop.get('x')
+                _stop_y = self.sp._scanarea_stop.get('y')
+            else:
+                _start_x = self.sp._tooltip_start.get('x')
+                _start_y = self.sp._tooltip_start.get('y')
+                _stop_x = self.sp._tooltip_stop.get('x')
+                _stop_y = self.sp._tooltip_stop.get('y')
+
             _diff_x = (_stop_x - _start_x)
             _diff_y = (_stop_y - _start_y)
             pyautogui.moveTo(_start_x, _start_y, duration=1)
@@ -739,7 +762,7 @@ class bobber_bot():
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
-                self.calibrate_mouse_scanarea()
+                self.calibrate_mouse_scanarea(screen)
 
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
@@ -765,25 +788,16 @@ class bobber_bot():
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
 
-    def chat_command(self, cmd):
-        pyautogui.press('enter')
-        pyautogui.typewrite(cmd)
-        pyautogui.press('enter')
-
-    # [Ghost Chat to only type/not send message]: (Optionally could create/specify a channel to talk into?)
-    def ghost_chat(self, cmd):
-        pyautogui.press('enter')
-        pyautogui.typewrite(cmd)
-        time.sleep(2) # Delay to read
-        pyautogui.press('esc')
-
 class mouse_calibrator(PyMouseEvent):
     _click_cnt = 0
+    _tooltip_stop = None
+    _tooltip_start = None
     _scanarea_stop = None
     _scanarea_start = None
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
+    _calibrate_tooltip = False
     _calibrating_scanarea = False
     _calibrating_mouse_mode = False
 
@@ -800,6 +814,13 @@ class mouse_calibrator(PyMouseEvent):
             self._scanarea_stop = None
             self._scanarea_start = None
             self._calibrating_scanarea = True
+            bb.sp.capture()
+            nemo = bb.sp._numpy
+        elif state == 'calibrate_tooltip':
+            print('[Calibrating Scan Area: Click at the top-left of the tooltip, && drag to lower-right and release.]')
+            self._tooltip_stop = None
+            self._tooltip_start = None
+            self._calibrate_tooltip = True
             bb.sp.capture()
             nemo = bb.sp._numpy
 
@@ -827,24 +848,27 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
-    def save_mouse_scanarea(self):
+    def save_mouse_scanarea(self, state='calibrate_scanarea'):
         # [Load up current configs]:
         config_filename = 'configs/config_mouse_scanarea.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
-        # [Trying to account for differences in OSX/Windows]:
-        if sys.platform == 'darwin':
-            _y_offset = -80
-        else:
-            _y_offset = -30
+        if state == 'calibrate_scanarea':
+            # [Trying to account for differences in OSX/Windows]:
+            if sys.platform == 'darwin':
+                _y_offset = -80
+            else:
+                _y_offset = -30
 
-        self._scanarea_start['scanarea_start']['y'] += _y_offset
-        self._scanarea_stop['scanarea_stop']['y'] += _y_offset
+            self._scanarea_start['scanarea_start']['y'] += _y_offset
+            self._scanarea_stop['scanarea_stop']['y'] += _y_offset
 
         # [Update config for locations]:
         configs.update(self._scanarea_start)
         configs.update(self._scanarea_stop)
+        configs.update(self._tooltip_start)
+        configs.update(self._tooltip_stop)
 
         # [Save values back to config file to update values]:
         with open(config_filename, 'w') as fp:
@@ -875,15 +899,22 @@ class mouse_calibrator(PyMouseEvent):
                 self.stop()
 
         # [Code for Scan Area Calibration]:
-        if button==1 and self._calibrating_scanarea:
+        if button==1 and (self._calibrating_scanarea or self._calibrate_tooltip):
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+
             if press:
-                self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
+                if self._calibrating_scanarea:
+                    self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
+                else: 
+                    self._tooltip_start = {"tooltip_start" : { "x":int_x, "y":int_y }}
             else:
-                self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
+                if self._calibrating_scanarea:
+                    self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
+                else:
+                    self._tooltip_stop = {"tooltip_stop" : { "x":int_x, "y":int_y }}
 
             # [Send coords back over to bobberbot]:
-            if self._scanarea_stop is not None:
+            if self._scanarea_stop is not None or self._tooltip_stop is not None:
                 self._calibrating_scanarea = False
                 self.save_mouse_scanarea()
                 cv2.destroyAllWindows()
@@ -899,8 +930,6 @@ class mouse_calibrator(PyMouseEvent):
             self.stop()
         '''
 
-# DLMS took care of most of my problems..
-# Take catch/miss count for every hour to datamine how often threshold changes
 # [0]: Default config for scanarea should be "screen_fast(.85)"
 # [1]: Change save_square to call save_rect
 # [2]: Check for death upon login?
@@ -911,7 +940,6 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_dev testing]:')
-        bb.calibrate_mouse_scanarea()
-        bb.sp.calibrate_image()
+        bb.calibrate_mouse_scanarea('tooltip')
 
 print('[fin.]')
