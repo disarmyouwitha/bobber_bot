@@ -9,16 +9,19 @@ One thing that might throw things into upheaval is.. if your `Render Scale` is n
 
 The other tricky part is setting up the sound.. `audio_callback()` is using the speaker's output to detect the sound of the splash -- This takes some setup with Soundflower on OSX, or by creating a Sound Mixer on windows.. I've included the steps below to help set that up!
 
-# [AT THE MOMENT]:
-> The bot will cast `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
-> ^(Optionally, you can enable `_use_baubles=True` to cast baubles every 10min: `Baubles on "9"` )
-> ^(Optionally, you can enable `_use_mouse_mode=True` to only use the mouse for fishing actions and it will walk you through calibration -- allowing you to type to your guild, etc, if you are a chatter-bug like me =3)
 
+# [AT THE MOMENT]:
 > The bot will start listening when started. This is the main loop -- when a SPLASH is detected, it will try to catch/recast 
 
 > The bot will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
 
 > It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
+
+> The bot will cast `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`.
+> ^(Optionally, you can enable `_use_baubles=True` to cast baubles every 10min: `Baubles on "9"` )
+> ^(Optionally, you can enable `_use_mouse_mode=True` to only use the mouse for fishing actions and it will walk you through calibration -- allowing you to type to your guild, etc, if you are a chatter-bug like me =3)
+
+> ^(Optionally, if you create a `pass.txt` under the configs directory, the bot will try to log you in with this password when it believes that it's been disconnected) ((This works on my client, will have to test for others))
 
 
 # [Setting up audio_callback for OSX]:
@@ -26,7 +29,8 @@ The other tricky part is setting up the sound.. `audio_callback()` is using the 
 >      https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
 >      OR `install_files/Soundflower-2.0b2.dmg`
 
-> [1]: Click your speaker from osx toolbar and select "Soundflower (2ch)" from the dropdown. 
+> [1]: Click your speaker from osx toolbar and select "Soundflower (2ch)" from the dropdown.
+>       Check out: `img/soundflower_setup_osx` as an example
 
 > [2]: And you should be done! Use `audio.py` to figure out what index your Soundflower device is!
 
