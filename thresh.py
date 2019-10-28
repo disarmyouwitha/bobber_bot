@@ -431,7 +431,7 @@ class bobber_bot():
 
     def setup_audio(self):
         dev_idx = 0 # Microphone as input
-        dev_idx = 2 # Speakers as input
+        dev_idx = 1 # Speakers as input
         # ^ System Dependant, use audio.py to configure
 
         # [Windows fork of pyaudio allows us to call speakers as loopback device]:
