@@ -102,7 +102,6 @@ class ScreenPixel(object):
     def save_rect(self, json_coords_start, json_coords_stop, mod=2):
         _start_x = json_coords_start.get('x')
         _start_y = json_coords_start.get('y')
-
         start_x = (_start_x*mod)
         start_y = (_start_y*mod)
 
@@ -110,11 +109,6 @@ class ScreenPixel(object):
         _stop_y = json_coords_stop.get('y')
         stop_x = (_stop_x*mod)
         stop_y = (_stop_y*mod)
-
-        top_start = start_y
-        top_stop = stop_y
-        left_start = start_x
-        left_stop = stop_x
 
         # [Trim _numpy array to rect]:
         return self._numpy[start_y:stop_y,start_x:stop_x]
@@ -747,9 +741,8 @@ class bobber_bot():
             pyautogui.moveTo(_start_x,_start_y, duration=1)
 
             # [Screenshot for debugging]:
-            self.sp.capture()
             nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
-            imageio.imwrite('calibrate_tooltip.png', nemo)
+            imageio.imwrite('calibrate_scanarea.png', nemo)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
@@ -951,7 +944,7 @@ class mouse_calibrator(PyMouseEvent):
 #    > ability to start/stop fishing, etc
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = True
+    _DEV = False
     if _DEV==False:
         bb.start()
     else:
