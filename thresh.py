@@ -820,7 +820,6 @@ class mouse_calibrator(PyMouseEvent):
             self._scanarea_stop = None
             self._scanarea_start = None
             self._calibrating_scanarea = True
-            print(self._calibrating_scanarea)
             bb.sp.capture()
             nemo = bb.sp._numpy
 
@@ -830,10 +829,12 @@ class mouse_calibrator(PyMouseEvent):
             cv2.imshow('Calibrate Scanarea', nemo)
             cv2.moveWindow('Calibrate Scanarea', 0,0)
         elif state == 'calibrate_tooltip':
-            print('[Calibrating Tooltip: Click at the top-left of the tooltip, && drag to lower-right and release.]')
             self._tooltip_stop = None
             self._tooltip_start = None
             self._calibrating_tooltip = True
+            print('[Calibrating Tooltip: 3sec')
+            time.sleep(3)
+            print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
             bb.sp.capture()
             nemo = bb.sp._numpy
 
