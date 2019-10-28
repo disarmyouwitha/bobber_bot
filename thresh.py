@@ -19,10 +19,8 @@ if sys.platform == 'darwin':
 else:
     import mss
 
-_dev = False
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
-
 
 # [Neat helper function for timing operations!]:
 @contextlib.contextmanager
@@ -81,21 +79,17 @@ class ScreenPixel(object):
         #imageio.imwrite('screen.png', self._numpy)
 
     def capture_mss(self):
-        #print('capture_mss')
         with mss.mss() as sct:
-            # [Capture Part of the screen -- NEAT!]:
-            #monitor = { "top": 100, "left": 100, "width": 160, "height": 135, "mon": 0 }
-
             # [Equivalent to CG.CGRectInfinite]:
             monitor = sct.monitors[0] #0: All | 1: first | 2: second
             self._width = monitor['width']
             self._height = monitor['height']
 
             # [Get raw pixels from the screen, save it to a Numpy array as RGB]:
-            _numpy_bgr = numpy.array(sct.grab(monitor)) #sct.grab()
+            _numpy_bgr = numpy.array(sct.grab(monitor))
             _numpy_rgb = cv2.cvtColor(_numpy_bgr, cv2.COLOR_BGR2RGB)
             self._numpy = _numpy_rgb
-            #simageio.imwrite('screen_mss.png', self._numpy)
+            #imageio.imwrite('screen_mss.png', self._numpy)
 
     def resize_image(self, nemo, scale_percent=50):
         width = int(nemo.shape[1] * scale_percent / 100)
@@ -937,25 +931,28 @@ class mouse_calibrator(PyMouseEvent):
                 self.stop()
 
         '''
-        # [Mouse-override for `_dev` testing]:
-        if button==2 and press and _dev==True:
+        # [Mouse-override for testing]:
+        if (button==1 and press) and (self._calibrating_scanarea==False and self._calibrating_tooltip==False and self._calibrating_mouse_mode==False):
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
-            bb.sp.capture()
-            nemo = bb.sp.save_square(top=int_y,left=int_x,square_width=100,mod=2,center=False)
-            imageio.imwrite('calibrate_login.png', nemo)
-            self.stop()
         '''
 
-# [0]: Default config for scanarea should be "screen_fast(.85)"
+# [-]: Code cleanup.
+# [0]: Set config/variables for `fishing skill, fishing pole, baubles`
+# [0]: Set reasonable defaults for config/* files for Master
 # [1]: Change save_square to call save_rect
 # [2]: Check for death upon login?
-# [3]: Finish Windows Implementation
+# [3]: Change tooltip_calibration to clip the rect rather than hardcoded save_square.
+#    > Change tooltip_check to SSIM?
+# [4]: Ability to recalibrate during loop
+# [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands.
+#    > ability to start/stop fishing, etc
 bb = bobber_bot()
 if __name__ == '__main__':
-    if _dev==False:
+    _DEV = False
+    if _DEV==False:
         bb.start()
     else:
-        print('[_dev testing]:')
+        print('[_DEV testing]:')
         bb.calibrate_mouse_scanarea('tooltip')
 
 print('[fin.]')
