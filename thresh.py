@@ -111,40 +111,6 @@ class ScreenPixel(object):
         # [Trim _numpy array to rect]:
         return self._numpy[start_y:stop_y,start_x:stop_x]
 
-    # Square is a type of rectangle.. might not need this / might re-write to call save_rect?
-    def save_square(self, top, left, square_width=100, mod=2, center=False):
-        top = (top*mod)
-        left = (left*mod)
-        square_width = square_width*mod
-
-        if center:
-            top = top-(square_width/2)
-            left = left-(square_width/2)
-
-        # [Correct out-of-bounds Top]:
-        top_start = top
-        if (top_start+square_width) > self._height:
-            top_start = self._height-square_width
-        if top_start < 0:
-            top_start = 0
-        top_stop = (top_start+square_width)
-
-        # [Correct out-of-bounds Left]:
-        left_start = left
-        if (left_start+square_width) > self._width:
-            left_start = self._width-square_width
-        if left_start < 0:
-            left_start = 0
-        left_stop = (left_start+square_width)
-
-        print('top_start: {0}'.format(top_start))
-        print('top_stop: {0}'.format(top_stop))
-        print('left_start: {0}'.format(left_start))
-        print('left_stop: {0}'.format(left_stop))
-
-        # [Trim _numpy array to square]:
-        return self._numpy[top_start:top_stop,left_start:left_stop]
-
     def nothing(self, x):
         #print('Trackbar value: ' + str(x))
         pass
@@ -503,12 +469,14 @@ class bobber_bot():
         return False
 
     def start(self):
-        # [Calibrate scanarea/tooltip coords]:
+        # [Calibrate Scanarea coords]:
         self.calibrate_mouse_scanarea()
-        self.calibrate_mouse_tooltip()
 
         # [Calibrate HSV for bobber]:
         self.sp.calibrate_bobber()
+
+        # [Calibrate Tooltip coords]:
+        self.calibrate_mouse_tooltip()
 
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
@@ -706,7 +674,7 @@ class bobber_bot():
                 _mod = 2
             else:
                 _mod = 1
-            self.draw_rect(self, self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod)
+            self.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
@@ -738,22 +706,22 @@ class bobber_bot():
 
         if _use_calibrate_config == False:
             if sys.platform == 'darwin':
-                _mod = 2
+                _mod = 1 #MOD2?
             else:
-                _mod = 1
-            self.draw_rect(self, self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod)
+                _mod = 1 #MOD2?
+            self.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=_mod) #MOD1? (remove above IF?)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Tooltip Calibration Good? (y/n)]: ')
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good:
                 if sys.platform == 'darwin':
-                    _mod = 2
+                    _mod = 1 #MOD2?
                 else:
                     _mod = 1 #MOD2?
 
                 # [Screenshot for `tooltip_control_gray`]:
-                nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=_mod) 
+                nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=_mod) #MOD1? (remove above IF?)
                 gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
                 imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
             else:
@@ -836,11 +804,12 @@ class mouse_calibrator(PyMouseEvent):
 
             # [Displays bottom half, right side for tooltip calibration]:
             if sys.platform == 'darwin':
-                _mod = 2
+                _mod = 1 #MOD2?
             else:
                 _mod = 1 #MOD2?
-            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=_mod) 
 
+            #MOD1? (remove above IF?)
+            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=_mod)
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
         else:
@@ -933,7 +902,6 @@ class mouse_calibrator(PyMouseEvent):
             else:
                 self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
 
-
             # [Send coords back over to bobberbot]:
             if self._scanarea_stop is not None:
                 self.save_scanarea()
@@ -958,13 +926,11 @@ class mouse_calibrator(PyMouseEvent):
                 self.stop()
 
 
-# [1]: CHECK work.. as best as possible.
-# [-]: After switching tooltip calibration we can ditch save_square for save_rect and cleanup~
-# [-]: Command to give bot for `calibrate_relogin()` to get `login_control_gray` for user
 # [0]: Set config/variables for `fishing skill, fishing pole, baubles`
 # [1]: Set reasonable defaults for config/* files for Master
 # [2]: Check for death upon login?
 # [3]: Ability to recalibrate during loop
+# [-]: Command to give bot for `calibrate_relogin()` to get `login_control_gray` for user
 # [4]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands (ability to start/stop fishing, etc)
 bb = bobber_bot()
 if __name__ == '__main__':
