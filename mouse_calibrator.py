@@ -1,16 +1,8 @@
-import os
 import sys
 import cv2
 import json
 import time
-import numpy
-import pyaudio
-import imageio
-import pyautogui
-import playsound
-import contextlib
-import skimage.metrics
-import matplotlib.pyplot as plt
+#import numpy
 from pymouse import PyMouseEvent
 
 # [Import Quartz for OSX, else use MSS]: (for screen_pixel.capture())

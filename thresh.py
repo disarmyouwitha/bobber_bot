@@ -10,15 +10,8 @@ import pyautogui
 import playsound
 import contextlib
 import skimage.metrics
-import matplotlib.pyplot as plt
-from pymouse import PyMouseEvent
 
-# [Import Quartz for OSX, else use MSS]: (for screen_pixel.capture())
-if sys.platform == 'darwin':
-    import Quartz.CoreGraphics as CG
-else:
-    import mss
-
+# [Import local classes]:
 import screen_pixel
 import mouse_calibrator
 
