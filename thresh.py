@@ -438,10 +438,13 @@ class bobber_bot():
         print('[Checking for login screen / Checking for disconnect] 2sec..')
         time.sleep(2)
         self.sp.capture()
-        _draw_rect_start = {"x": 420, "y": 394}
-        _draw_rect_stop = {"x": 1013, "y": 673}
 
-        nemo = self.sp.save_rect(_draw_rect_start, _draw_rect_stop, mod=2)
+        if sys.platform == 'darwin':
+            _mod = 2
+        else:
+            _mod = 1
+
+        nemo = self.sp.save_rect({"x": 420, "y": 394}, {"x": 1013, "y": 673}, mod=_mod)
 
         # [Convert images to grayscale]:
         gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
@@ -626,9 +629,10 @@ class bobber_bot():
         self.sp.capture()
 
         if sys.platform == 'darwin':
-            nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=2)
+            _mod = 2
         else:
-            nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1) #MOD2?
+            _mod = 1 #MOD2?
+        nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=_mod)
 
         # [Convert images to grayscale]:
         gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
@@ -651,6 +655,29 @@ class bobber_bot():
             return _coords
 
         return 0
+
+    def draw_rect(self, json_coords_start, json_coords_stop, mod=2):
+        _start_x = json_coords_start.get('x')
+        _start_y = json_coords_start.get('y')
+        _start_x = (_start_x*mod)
+        _start_y = (_start_y*mod)
+
+        _stop_x = json_coords_stop.get('x')
+        _stop_y = json_coords_stop.get('y')
+        _stop_x = (_stop_x*mod)
+        _stop_y = (_stop_y*mod)
+
+        # [Draw box around Scan Area specified with mouse]:
+        print('Pause. Drawing scan area with mouse:')
+        time.sleep(2)
+
+        _diff_x = (_stop_x - _start_x)
+        _diff_y = (_stop_y - _start_y)
+        pyautogui.moveTo(_start_x, _start_y, duration=1)
+        pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
+        pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
+        pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
+        pyautogui.moveTo(_start_x,_start_y, duration=1)
 
     # [Have user calibrate location of Scan Area]:
     def calibrate_mouse_scanarea(self):
@@ -675,22 +702,11 @@ class bobber_bot():
             self.sp._scanarea_stop = configs['scanarea_stop']
 
         if _use_calibrate_config == False:
-            _start_x = self.sp._scanarea_start.get('x')
-            _start_y = self.sp._scanarea_start.get('y')
-            _stop_x = self.sp._scanarea_stop.get('x')
-            _stop_y = self.sp._scanarea_stop.get('y')
-
-            # [Draw box around Scan Area specified with mouse]:
-            print('Pause. Drawing scan area with mouse:')
-            time.sleep(2)
-
-            _diff_x = (_stop_x - _start_x)
-            _diff_y = (_stop_y - _start_y)
-            pyautogui.moveTo(_start_x, _start_y, duration=1)
-            pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
-            pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
-            pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
-            pyautogui.moveTo(_start_x,_start_y, duration=1)
+            if sys.platform == 'darwin':
+                _mod = 2
+            else:
+                _mod = 1
+            self.draw_rect(self, self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
@@ -721,32 +737,23 @@ class bobber_bot():
             self.sp._tooltip_stop = configs['tooltip_stop']
 
         if _use_calibrate_config == False:
-            _start_x = self.sp._tooltip_start.get('x')
-            _start_y = self.sp._tooltip_start.get('y')
-            _stop_x = self.sp._tooltip_stop.get('x')
-            _stop_y = self.sp._tooltip_stop.get('y')
-
-            # [Draw box around Scan Area specified with mouse]:
-            print('Pause. Drawing scan area with mouse:')
-            time.sleep(2)
-
-            _diff_x = (_stop_x - _start_x)
-            _diff_y = (_stop_y - _start_y)
-            pyautogui.moveTo(_start_x, _start_y, duration=1)
-            pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
-            pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
-            pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
-            pyautogui.moveTo(_start_x,_start_y, duration=1)
+            if sys.platform == 'darwin':
+                _mod = 2
+            else:
+                _mod = 1
+            self.draw_rect(self, self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Tooltip Calibration Good? (y/n)]: ')
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good:
-                # [Screenshot for `tooltip_control_gray`]:
                 if sys.platform == 'darwin':
-                    nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=2)
+                    _mod = 2
                 else:
-                    nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) #MOD2?
+                    _mod = 1 #MOD2?
+
+                # [Screenshot for `tooltip_control_gray`]:
+                nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=_mod) 
                 gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
                 imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
             else:
@@ -829,9 +836,10 @@ class mouse_calibrator(PyMouseEvent):
 
             # [Displays bottom half, right side for tooltip calibration]:
             if sys.platform == 'darwin':
-                nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=2)
+                _mod = 2
             else:
-                nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=1) #MOD2?
+                _mod = 1 #MOD2?
+            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=_mod) 
 
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
