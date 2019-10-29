@@ -2,16 +2,8 @@ import sys
 import cv2
 import json
 import time
-#import numpy
-from pymouse import PyMouseEvent
-
-# [Import Quartz for OSX, else use MSS]: (for screen_pixel.capture())
-if sys.platform == 'darwin':
-    import Quartz.CoreGraphics as CG
-else:
-    import mss
-
 import screen_pixel
+from pymouse import PyMouseEvent
 
 class mouse_calibrator(PyMouseEvent):
     _sp = None
