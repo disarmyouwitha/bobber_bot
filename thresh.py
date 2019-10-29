@@ -13,11 +13,14 @@ import skimage.metrics
 import matplotlib.pyplot as plt
 from pymouse import PyMouseEvent
 
-# [Import Quartz for OSX, else use MSS]: (for ScreenPixel.capture())
+# [Import Quartz for OSX, else use MSS]: (for screen_pixel.capture())
 if sys.platform == 'darwin':
     import Quartz.CoreGraphics as CG
 else:
     import mss
+
+import screen_pixel
+import mouse_calibrator
 
 pyautogui.PAUSE = 0
 pyautogui.FAILSAFE = True
@@ -29,252 +32,6 @@ def timer(msg):
     yield
     end = time.time()
     print('%s: %.02fms'%(msg, (end-start)*1000))
-
-
-class ScreenPixel(object):
-    # [ScreenPixel Globals]:
-    _data = None
-    _numpy = None
-    _width = None
-    _height = None
-    _scanarea_start = None
-    _scanarea_stop = None
-    _tooltip_start = None
-    _tooltip_stop = None
-    _thresh_cnt = 0
-
-    # [Threshold Presets]:
-    bobber_lower_hsv = numpy.array([0,0,0])
-    bobber_upper_hsv = numpy.array([21,255,255])
-
-    def capture(self):
-        if sys.platform == 'darwin':
-            self.capture_osx()
-        else:
-            self.capture_mss()
-
-    def capture_osx(self):
-        region = CG.CGRectInfinite
-
-        # [Create screenshot as CGImage]:
-        image = CG.CGWindowListCreateImage(region, CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID, CG.kCGWindowImageDefault)
-
-        # [Intermediate step, get pixel data as CGDataProvider]:
-        prov = CG.CGImageGetDataProvider(image)
-
-        # [Copy data out of CGDataProvider, becomes string of bytes]:
-        self._data = CG.CGDataProviderCopyData(prov)
-
-        # [Get width/height of image]:
-        self._width = CG.CGImageGetWidth(image)
-        self._height = CG.CGImageGetHeight(image)
-
-        # [Get raw pixels from the screen, save it to a Numpy array as RGB]:
-        imgdata=numpy.frombuffer(self._data,dtype=numpy.uint8).reshape(int(len(self._data)/4),4)
-        _numpy_bgr = imgdata[:self._width*self._height,:-1].reshape(self._height,self._width,3)
-        _numpy_rgb = _numpy_bgr[...,::-1]
-        self._numpy = _numpy_rgb
-        #imageio.imwrite('screen.png', self._numpy)
-
-    def capture_mss(self):
-        with mss.mss() as sct:
-            # [Equivalent to CG.CGRectInfinite]:
-            monitor = sct.monitors[0] #0: All | 1: first | 2: second
-            self._width = monitor['width']
-            self._height = monitor['height']
-
-            # [Get raw pixels from the screen, save it to a Numpy array as RGB]:
-            _numpy_bgr = numpy.array(sct.grab(monitor))
-            _numpy_rgb = cv2.cvtColor(_numpy_bgr, cv2.COLOR_BGR2RGB)
-            self._numpy = _numpy_rgb
-            #imageio.imwrite('screen_mss.png', self._numpy)
-
-    def resize_image(self, nemo, scale_percent=50):
-        width = int(nemo.shape[1] * scale_percent / 100)
-        height = int(nemo.shape[0] * scale_percent / 100)
-        dim = (width, height)
-        nemo_scaled = cv2.resize(nemo, dim, interpolation = cv2.INTER_AREA)
-        return nemo_scaled 
-
-    # [To facilitate grabbing Scan Area]:
-    def save_rect(self, json_coords_start, json_coords_stop, mod=2):
-        _start_x = json_coords_start.get('x')
-        _start_y = json_coords_start.get('y')
-        start_x = (_start_x*mod)
-        start_y = (_start_y*mod)
-
-        _stop_x = json_coords_stop.get('x')
-        _stop_y = json_coords_stop.get('y')
-        stop_x = (_stop_x*mod)
-        stop_y = (_stop_y*mod)
-
-        # [Trim _numpy array to rect]:
-        return self._numpy[start_y:stop_y,start_x:stop_x]
-
-    def nothing(self, x):
-        #print('Trackbar value: ' + str(x))
-        pass
-
-    # [Display calibrate images to confirm they look good]:
-    def calibrate_bobber(self):
-        # [Check for config files]:
-        config_filename = 'configs/bobber.json'
-        if os.path.isfile(config_filename):
-            _use_calibrate_config = input('[Use calibration from config for bobber?]: ')
-            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
-        else:
-            _use_calibrate_config = False
-
-        # [Set HSV mask from configs]:
-        if _use_calibrate_config:
-            with open(config_filename) as config_file:
-                configs = json.load(config_file)
-                JSON_bobber_lower_hsv  = configs['bobber_lower_hsv']
-                JSON_bobber_upper_hsv  = configs['bobber_upper_hsv']
-                lower_hsv = numpy.array([JSON_bobber_lower_hsv.get('hue'), JSON_bobber_lower_hsv.get('saturation'), JSON_bobber_lower_hsv.get('value')])
-                upper_hsv = numpy.array([JSON_bobber_upper_hsv.get('hue'), JSON_bobber_upper_hsv.get('saturation'), JSON_bobber_upper_hsv.get('value')])
-            _calibrate_good = True
-            self.thresh_image()
-        else:
-            input('[Calibrating bobber in 3sec!]:')
-            time.sleep(3)
-
-            # [Capture of calibration image]:
-            self.capture()
-            if sys.platform == 'darwin':
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
-                nemo = self.resize_image(nemo, scale_percent=50)
-            else:
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) #MOD2?
-            lower_hsv = self.bobber_lower_hsv
-            upper_hsv = self.bobber_upper_hsv
-
-            # [Median Blur]:
-            # [Convert BGR to HSV]:
-            nemo = cv2.medianBlur(nemo, 5)
-            hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
-
-            # [Unpack into local variables]:
-            (uh, us, uv) = upper_hsv
-            (lh, ls, lv) = lower_hsv
-
-            # [Set up window]:
-            window_name = 'HSV Calibrator'
-            cv2.namedWindow(window_name)
-            cv2.moveWindow(window_name, 10,10) 
-
-            # [Create trackbars for Hue]:
-            cv2.createTrackbar('LowerH',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('LowerH',window_name, lh)
-            cv2.createTrackbar('UpperH',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('UpperH',window_name, uh)
-
-            # [Create trackbars for Saturation]:
-            cv2.createTrackbar('LowerS',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('LowerS',window_name, ls)
-            cv2.createTrackbar('UpperS',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('UpperS',window_name, us)
-
-            # [Create trackbars for Value]:
-            cv2.createTrackbar('LowerV',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('LowerV',window_name, lv)
-            cv2.createTrackbar('UpperV',window_name,0,255,self.nothing)
-            cv2.setTrackbarPos('UpperV',window_name, uv)
-
-            font = cv2.FONT_HERSHEY_SIMPLEX
-
-            # [Alert user calibration image is ready]:
-            playsound.playsound('audio/sms_alert.mp3')
-
-            # [Keep calibration window open until ESC is pressed]:
-            while True:
-                # [Threshold the HSV image]:
-                mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-                cv2.imshow(window_name, mask)
-
-                # [Listen for ESC key]:
-                k = cv2.waitKey(1) & 0xFF
-                if k == 27:
-                    break
-
-                # [Get current positions of Upper HSV trackbars]:
-                uh = cv2.getTrackbarPos('UpperH',window_name)
-                us = cv2.getTrackbarPos('UpperS',window_name)
-                uv = cv2.getTrackbarPos('UpperV',window_name)
-
-                # [Get current positions of Lower HSCV trackbars]:
-                lh = cv2.getTrackbarPos('LowerH',window_name)
-                ls = cv2.getTrackbarPos('LowerS',window_name)
-                lv = cv2.getTrackbarPos('LowerV',window_name)
-
-                # [Set lower/upper HSV to get the current mask]:
-                upper_hsv = numpy.array([uh,us,uv])
-                lower_hsv = numpy.array([lh,ls,lv])
-
-            # [Cleanup Windows]:
-            cv2.destroyAllWindows()
-
-            # [Check Calibration /w user]:
-            if _use_calibrate_config == False:
-                _calibrate_good = input('[Calibration Good? Ready? (y/n)]: ')
-                _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
-
-            # [Save Calibration image]: (Great for setup debug)
-            if _calibrate_good:
-                mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-                imageio.imwrite('calibrate_thresh_bobber{0}.png'.format(self._thresh_cnt), mask)
-                self._thresh_cnt+=1
-
-            # [Update config file]:
-            if _calibrate_good and _use_calibrate_config == False:
-                (lh, ls, lv) = lower_hsv
-                (uh, us, uv) = upper_hsv
-
-                print('[Saving calibration to: {0}]'.format(config_filename))
-
-                # [Load config file into local variables]:
-                with open(config_filename) as config_file:
-                    config = json.load(config_file)
-  
-                # [Update config for current calibration]:
-                config.update({"bobber_lower_hsv": {"hue": int(lh), "saturation": int(ls), "value": int(lv)}})
-                config.update({"bobber_upper_hsv": {"hue": int(uh), "saturation": int(us), "value": int(uv)}})
-
-                # [Save values back to config file to update them]:
-                with open(config_filename, 'w') as fp:
-                    json.dump(config, fp)
-
-        # [Update Globals]:
-        if _calibrate_good:
-            self.bobber_lower_hsv = lower_hsv
-            self.bobber_upper_hsv = upper_hsv
-        else:
-            # [Bad calibration, try again]:
-            self.calibrate_bobber()
-
-    def thresh_image(self):
-        self.capture()
-        if sys.platform == 'darwin':
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
-            nemo = self.resize_image(nemo, scale_percent=50)
-        else:
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) #MOD2?
-
-        lower_hsv = self.bobber_lower_hsv
-        upper_hsv = self.bobber_upper_hsv
-
-        # [Median Blur]:
-        # [Convert BGR to HSV]:
-        nemo = cv2.medianBlur(nemo, 5)
-        hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
-        nemo_masked = cv2.inRange(hsv, lower_hsv, upper_hsv)
-
-        if self._thresh_cnt<0:
-            imageio.imwrite('screen_thresh_bobber{0}.png'.format(self._thresh_cnt), nemo_masked)
-        self._thresh_cnt+=1
-
-        return nemo_masked
-
 
 # [Callback for splash detection!]:
 def audio_callback(in_data, frame_count, time_info, status):
@@ -347,7 +104,7 @@ class bobber_bot():
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
 
     def __init__(self):
-        self.sp = ScreenPixel()
+        self.sp = screen_pixel.screen_pixel()
         self.pa = pyaudio.PyAudio()
         self.setup_audio()
 
@@ -660,7 +417,7 @@ class bobber_bot():
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
             # [Display picture of screen for user to click]:
-            mc = mouse_calibrator('calibrate_scanarea')
+            mc = mouse_calibrator.mouse_calibrator('calibrate_scanarea')
             mc.run()
 
         # [Load config file into globals]:
@@ -695,7 +452,7 @@ class bobber_bot():
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
-            mc = mouse_calibrator('calibrate_tooltip')
+            mc = mouse_calibrator.mouse_calibrator('calibrate_tooltip')
             mc.run()
 
         # [Load config file into globals]:
@@ -739,7 +496,7 @@ class bobber_bot():
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
-            mc = mouse_calibrator('calibrate_mouse_actionbar')
+            mc = mouse_calibrator.mouse_calibrator('calibrate_mouse_actionbar')
             mc.run()
 
         # [Load config file into globals]:
@@ -750,180 +507,6 @@ class bobber_bot():
             self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
-
-class mouse_calibrator(PyMouseEvent):
-    _click_cnt = 0
-    _tooltip_stop = None
-    _tooltip_start = None
-    _scanarea_stop = None
-    _scanarea_start = None
-    _fishing_pole_loc = None
-    _fishing_skill_loc = None
-    _fishing_bauble_loc = None
-    _calibrating_tooltip = False
-    _calibrating_scanarea = False
-    _calibrating_mouse_mode = False
-
-    # [Trying to account for differences in OSX/Windows]:
-    if sys.platform == 'darwin':
-        _y_offset = -80
-    else:
-        _y_offset = -30
-
-    def __init__(self, state=None):
-        PyMouseEvent.__init__(self)
-        if state == 'calibrate_mouse_actionbar':
-            print('[Calibrating fishing_pole action bar location! Alt-tab, go left-click it && come back here!]')
-            self._fishing_pole_loc = None
-            self._fishing_skill_loc = None
-            self._fishing_bauble_loc = None
-            self._calibrating_mouse_mode = True
-        elif state == 'calibrate_scanarea':
-            print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
-            self._scanarea_stop = None
-            self._scanarea_start = None
-            self._calibrating_scanarea = True
-            bb.sp.capture()
-            nemo = bb.sp._numpy
-
-            # [Windows might need this at 50% in WoW too?]:
-            if sys.platform == 'darwin':
-                nemo = bb.sp.resize_image(nemo, scale_percent=50)
-
-            cv2.imshow('Calibrate Scanarea', nemo)
-            cv2.moveWindow('Calibrate Scanarea', 0,0)
-        elif state == 'calibrate_tooltip':
-            self._tooltip_stop = None
-            self._tooltip_start = None
-            self._calibrating_tooltip = True
-            print('[Calibrating Tooltip: 3sec')
-            time.sleep(3)
-            print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
-
-            bb.sp.capture()
-
-            # [Displays bottom half, right side for tooltip calibration]:
-            if sys.platform == 'darwin':
-                _mod = 1 #MOD2?
-            else:
-                _mod = 1 #MOD2?
-
-            #MOD1? (remove above IF?)
-            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=_mod)
-            cv2.imshow('Calibrate Tooltip', nemo)
-            cv2.moveWindow('Calibrate Tooltip', 0,0)
-        else:
-            print('[Mouse Listening]')
-
-    def save_actionbar_calibration(self):
-        # [Load up current configs]:
-        config_filename = 'configs/mouse_actionbar.json'
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-
-        # [Update config for locations]:
-        configs.update(self._fishing_pole_loc)
-        configs.update(self._fishing_skill_loc)
-        configs.update(self._fishing_bauble_loc)
-
-        # [Save values back to config file to update values]:
-        with open(config_filename, 'w') as fp:
-            json.dump(configs, fp)
-
-    def save_scanarea(self):
-        # [Load up current configs]:
-        config_filename = 'configs/scanarea.json'
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-
-        self._scanarea_start['scanarea_start']['y'] += self._y_offset
-        self._scanarea_stop['scanarea_stop']['y'] += self._y_offset
-
-        # [Update config for locations]:
-        configs.update(self._scanarea_start)
-        configs.update(self._scanarea_stop)
-
-        # [Save values back to config file to update values]:
-        with open(config_filename, 'w') as fp:
-            json.dump(configs, fp)
-
-    def save_tooltip(self):
-        # [Load up current configs]:
-        config_filename = 'configs/tooltip.json'
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-
-        self._tooltip_start['tooltip_start']['y'] += self._y_offset
-        self._tooltip_stop['tooltip_stop']['y'] += self._y_offset
-        self._tooltip_start['tooltip_start']['y'] += int(bb.sp._height/2)
-        self._tooltip_start['tooltip_start']['x'] += int(bb.sp._width/2)
-        self._tooltip_stop['tooltip_stop']['y'] += int(bb.sp._height/2)
-        self._tooltip_stop['tooltip_stop']['x'] += int(bb.sp._width/2)
-        # ^(Tooltip calibration starts from lower half, right half)
-
-        # [Update config for locations]:
-        configs.update(self._tooltip_start)
-        configs.update(self._tooltip_stop)
-
-        # [Save values back to config file to update values]:
-        with open(config_filename, 'w') as fp:
-            json.dump(configs, fp)
-
-    def click(self, x, y, button, press):
-        int_x = int(x)
-        int_y = int(y)
-
-        # [Code for Mouse Mouse Calibration]:
-        if button==1 and press and self._calibrating_mouse_mode:
-            if self._fishing_pole_loc == None:
-                self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
-                print(self._fishing_pole_loc)
-                print('[Calibrating fishing_skill action bar location! Alt-tab, go left-click it && come back here!]')
-            elif self._fishing_skill_loc == None:
-                self._fishing_skill_loc = {"fishing_skill" : { "x":int_x, "y":int_y }}
-                print(self._fishing_skill_loc)
-                print('[Calibrating fishing_bauble action bar location! Alt-tab, go left-click it && come back here!]')
-            elif self._fishing_bauble_loc == None:
-                self._fishing_bauble_loc = {"fishing_bauble" : { "x":int_x, "y":int_y }}
-                print(self._fishing_bauble_loc)
-                print('Click one more time for Good Luck!')
-            else:
-                print('[Ending Calibration]')
-                self._calibrating_mouse_mode = False
-                self.save_actionbar_calibration()
-                self.stop()
-
-        # [Code for Scan Area Calibration]:
-        if button==1 and self._calibrating_scanarea:
-            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
-
-            if press:
-                self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
-            else:
-                self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
-
-            # [Send coords back over to bobberbot]:
-            if self._scanarea_stop is not None:
-                self.save_scanarea()
-                self._calibrating_scanarea = False
-                cv2.destroyAllWindows()
-                self.stop()
-
-        # [Code for Scan Area Calibration]:
-        if button==1 and self._calibrating_tooltip:
-            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
-
-            if press:
-                self._tooltip_start = {"tooltip_start" : { "x":int_x, "y":int_y }}
-            else:
-                self._tooltip_stop = {"tooltip_stop" : { "x":int_x, "y":int_y }}
-
-            # [Send coords back over to bobberbot]:
-            if self._tooltip_stop is not None:
-                self.save_tooltip()
-                self._calibrating_tooltip = False
-                cv2.destroyAllWindows()
-                self.stop()
 
 
 # [0]: Set config/variables for `fishing skill, fishing pole, baubles`

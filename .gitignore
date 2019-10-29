@@ -1,6 +1,6 @@
-.DS_Store
-configs/*.json
-configs/pass.txt
-img/login_control_gray.png
 img/tooltip_control_gray.png
+img/login_control_gray.png
+__pycache__/
+configs/*
+.DS_Store
 *.png
