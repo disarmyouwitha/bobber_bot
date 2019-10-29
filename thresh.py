@@ -46,8 +46,6 @@ class ScreenPixel(object):
     # [Threshold Presets]:
     bobber_lower_hsv = numpy.array([0,0,0])
     bobber_upper_hsv = numpy.array([21,255,255])
-    tooltip_lower_hsv = numpy.array([0,0,0])
-    tooltip_upper_hsv = numpy.array([25,255,255])
 
     def capture(self):
         if sys.platform == 'darwin':
@@ -152,11 +150,11 @@ class ScreenPixel(object):
         pass
 
     # [Display calibrate images to confirm they look good]:
-    def calibrate_image(self, screen='bobber'):
+    def calibrate_image(self):
         # [Check for config files]:
-        config_filename = 'configs/config_bobber_tooltip.json'
+        config_filename = 'configs/config_bobber.json'
         if os.path.isfile(config_filename):
-            _use_calibrate_config = input('[Use calibration from config for {0}?]: '.format(screen))
+            _use_calibrate_config = input('[Use calibration from config for bobber?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             _use_calibrate_config = False
@@ -165,44 +163,25 @@ class ScreenPixel(object):
         if _use_calibrate_config:
             with open(config_filename) as config_file:
                 configs = json.load(config_file)
-                if screen=='bobber':
-                    JSON_bobber_lower_hsv  = configs['bobber_lower_hsv']
-                    JSON_bobber_upper_hsv  = configs['bobber_upper_hsv']
-                    lower_hsv = numpy.array([JSON_bobber_lower_hsv.get('hue'), JSON_bobber_lower_hsv.get('saturation'), JSON_bobber_lower_hsv.get('value')])
-                    upper_hsv = numpy.array([JSON_bobber_upper_hsv.get('hue'), JSON_bobber_upper_hsv.get('saturation'), JSON_bobber_upper_hsv.get('value')])
-                elif screen=='tooltip':
-                    JSON_tooltip_lower_hsv = configs['tooltip_lower_hsv']
-                    JSON_tooltip_upper_hsv = configs['tooltip_upper_hsv']
-                    lower_hsv = numpy.array([JSON_tooltip_lower_hsv.get('hue'), JSON_tooltip_lower_hsv.get('saturation'), JSON_tooltip_lower_hsv.get('value')])
-                    upper_hsv = numpy.array([JSON_tooltip_upper_hsv.get('hue'), JSON_tooltip_upper_hsv.get('saturation'), JSON_tooltip_upper_hsv.get('value')])
+                JSON_bobber_lower_hsv  = configs['bobber_lower_hsv']
+                JSON_bobber_upper_hsv  = configs['bobber_upper_hsv']
+                lower_hsv = numpy.array([JSON_bobber_lower_hsv.get('hue'), JSON_bobber_lower_hsv.get('saturation'), JSON_bobber_lower_hsv.get('value')])
+                upper_hsv = numpy.array([JSON_bobber_upper_hsv.get('hue'), JSON_bobber_upper_hsv.get('saturation'), JSON_bobber_upper_hsv.get('value')])
             _calibrate_good = True
-            self.thresh_image(screen)
+            self.thresh_image()
         else:
-            input('[Calibrating {0} in 3sec!]:'.format(screen))
+            input('[Calibrating bobber in 3sec!]:')
             time.sleep(3)
 
             # [Capture of calibration image]:
             self.capture()
-            if screen=='bobber':
-                if sys.platform == 'darwin':
-                    nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
-                    nemo = self.resize_image(nemo, scale_percent=50)
-                else:
-                    nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
-                lower_hsv = self.bobber_lower_hsv
-                upper_hsv = self.bobber_upper_hsv
-            elif screen=='tooltip':
-                '''
-                if sys.platform == 'darwin':
-                    nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=2)
-                else:
-                    nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=1)
-                '''
-
-                #nemo = self.save_rect({"x":1720, "y": 880}, {"x":1920, "y": 1080}, mod=2)
-                nemo = self.save_square(top=725,left=1300,square_width=100,mod=2,center=False)
-                lower_hsv = self.tooltip_lower_hsv
-                upper_hsv = self.tooltip_upper_hsv
+            if sys.platform == 'darwin':
+                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
+                nemo = self.resize_image(nemo, scale_percent=50)
+            else:
+                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
+            lower_hsv = self.bobber_lower_hsv
+            upper_hsv = self.bobber_upper_hsv
 
             # [Median Blur]:
             # [Convert BGR to HSV]:
@@ -277,7 +256,7 @@ class ScreenPixel(object):
             # [Save Calibration image]: (Great for setup debug)
             if _calibrate_good:
                 mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-                imageio.imwrite('calibrate_thresh_{0}{1}.png'.format(screen, self._thresh_cnt), mask)
+                imageio.imwrite('calibrate_thresh_bobber{0}.png'.format(self._thresh_cnt), mask)
                 self._thresh_cnt+=1
 
             # [Update config file]:
@@ -292,12 +271,8 @@ class ScreenPixel(object):
                     config = json.load(config_file)
   
                 # [Update config for current calibration]:
-                if screen=='bobber':
-                    config.update({"bobber_lower_hsv": {"hue": int(lh), "saturation": int(ls), "value": int(lv)}})
-                    config.update({"bobber_upper_hsv": {"hue": int(uh), "saturation": int(us), "value": int(uv)}})
-                elif screen=='tooltip':
-                    config.update({"tooltip_lower_hsv": {"hue": int(lh), "saturation": int(ls), "value": int(lv)}})
-                    config.update({"tooltip_upper_hsv": {"hue": int(uh), "saturation": int(us), "value": int(uv)}})
+                config.update({"bobber_lower_hsv": {"hue": int(lh), "saturation": int(ls), "value": int(lv)}})
+                config.update({"bobber_upper_hsv": {"hue": int(uh), "saturation": int(us), "value": int(uv)}})
 
                 # [Save values back to config file to update them]:
                 with open(config_filename, 'w') as fp:
@@ -305,38 +280,21 @@ class ScreenPixel(object):
 
         # [Update Globals]:
         if _calibrate_good:
-            if screen=='bobber':
-                self.bobber_lower_hsv = lower_hsv
-                self.bobber_upper_hsv = upper_hsv
-            elif screen=='tooltip':
-                self.tooltip_lower_hsv = lower_hsv
-                self.tooltip_upper_hsv = upper_hsv
+            self.bobber_lower_hsv = lower_hsv
+            self.bobber_upper_hsv = upper_hsv
         else:
             # [Bad calibration, try again]:
-            self.calibrate_image(screen)
+            self.calibrate_image()
 
-    def thresh_image(self, screen='bobber'):
+    def thresh_image(self):
         self.capture()
-        if screen=='bobber':
-            if sys.platform == 'darwin':
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
-                nemo = self.resize_image(nemo, scale_percent=50)
-            else:
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
-            lower_hsv = self.bobber_lower_hsv
-            upper_hsv = self.bobber_upper_hsv
-        elif screen=='tooltip':
-            '''
-            if sys.platform == 'darwin':
-                nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=2)
-            else:
-                nemo = self.save_rect(self._tooltip_start, self._tooltip_stop, mod=1)
-            '''
-
-            #nemo = self.save_rect({"x":1720, "y": 880}, {"x":1920, "y": 1080}, mod=2)
-            nemo = self.save_square(top=725,left=1300,square_width=100)
-            lower_hsv = self.tooltip_lower_hsv
-            upper_hsv = self.tooltip_upper_hsv
+        if sys.platform == 'darwin':
+            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
+            nemo = self.resize_image(nemo, scale_percent=50)
+        else:
+            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
+        lower_hsv = self.bobber_lower_hsv
+        upper_hsv = self.bobber_upper_hsv
 
         # [Median Blur]:
         # [Convert BGR to HSV]:
@@ -344,8 +302,8 @@ class ScreenPixel(object):
         hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
         nemo_masked = cv2.inRange(hsv, lower_hsv, upper_hsv)
 
-        if self._thresh_cnt<20: # thresh_bobber, thresh_tooltip
-            imageio.imwrite('screen_thresh_{0}{1}.png'.format(screen,self._thresh_cnt), nemo_masked)
+        if self._thresh_cnt<0:
+            imageio.imwrite('screen_thresh_bobber{0}.png'.format(self._thresh_cnt), nemo_masked)
         self._thresh_cnt+=1
 
         return nemo_masked
@@ -541,26 +499,28 @@ class bobber_bot():
         return False
 
     def start(self):
-        # [Calibrate Scan Area]:
+        # [Calibrate scanarea/tooltip coords]:
         self.calibrate_mouse_scanarea()
+        self.calibrate_mouse_tooltip()
 
-        # [Calibrate HSV for bobber/tooltip]:
-        self.sp.calibrate_image(screen='bobber')
-        self.sp.calibrate_image(screen='tooltip')
+        # [Calibrate HSV for bobber]:
+        self.sp.calibrate_image()
 
+        # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
             self.calibrate_mouse_actionbar()
 
-        self._timer_start = time.time()
         input('[Enter to start bot!]: (3sec delay)')
+        self._timer_start = time.time()
         time.sleep(3)
 
         print('[BobberBot Started]')
         self._bot_start = time.time()
 
+        # [Play sound to alert start of bot]:
         playsound.playsound('audio/sms_alert.mp3')
-        self._audio_stream.start_stream()
 
+        self._audio_stream.start_stream()
         while self._audio_stream.is_active():
             try:
                 # [Start Fishing / 30sec fishing timer]:
@@ -627,7 +587,7 @@ class bobber_bot():
 
     # [Iterates over HSV threshold of screengrab to try and locate the bobber]:
     def find_bobber(self):
-        thresh = self.sp.thresh_image(screen='bobber')
+        thresh = self.sp.thresh_image()
 
         self._bobber_reset=False
         for x in range(0, thresh.shape[0]):
@@ -682,36 +642,17 @@ class bobber_bot():
         _coords = ((top+self.sp._scanarea_start.get('y')), (left+self.sp._scanarea_start.get('x')))
         pyautogui.moveTo(_coords[1], _coords[0], duration=0)
 
-        #'''
-        thresh = self.sp.thresh_image(screen='tooltip')
-        tooltip_top = 20
-        tooltip_left = 15
-
-        _tooltip_check = 0
-        for x in range(0,40,10):
-            tooltip_check = thresh[tooltip_left+x, tooltip_top]
-            if tooltip_check == 255:
-                _tooltip_check+=1
-
-        if _tooltip_check >= 1:
+        if self.check_tooltip():
             return _coords
-        #'''
-
-        #if self.check_tooltip():
-        #    return _coords
 
         return 0
 
     # [Have user calibrate location of Scan Area]:
-    def calibrate_mouse_scanarea(self, screen='scanarea'):
+    def calibrate_mouse_scanarea(self):
         # [Check for config files]:
-        config_filename = 'configs/config_mouse_scanarea.json'
+        config_filename = 'configs/scanarea.json'
         if os.path.isfile(config_filename):
-            if screen=='scanarea':
-                _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
-            elif screen=='tooltip':
-                _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
-
+            _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             _use_calibrate_config = False
@@ -719,33 +660,20 @@ class bobber_bot():
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
             # [Display picture of screen for user to click]:
-            if screen=='scanarea':
-                mc = mouse_calibrator('calibrate_scanarea')
-            elif screen=='tooltip':
-                mc = mouse_calibrator('calibrate_tooltip')
+            mc = mouse_calibrator('calibrate_scanarea')
             mc.run()
 
         # [Load config file into globals]:
         with open(config_filename) as config_file:
             configs = json.load(config_file)
-            if screen=='scanarea':
-                self.sp._scanarea_start = configs['scanarea_start']
-                self.sp._scanarea_stop = configs['scanarea_stop']
-            elif screen=='tooltip':
-                self.sp._tooltip_start = configs['tooltip_start']
-                self.sp._tooltip_stop = configs['tooltip_stop']
+            self.sp._scanarea_start = configs['scanarea_start']
+            self.sp._scanarea_stop = configs['scanarea_stop']
 
         if _use_calibrate_config == False:
-            if screen=='scanarea':
-                _start_x = self.sp._scanarea_start.get('x')
-                _start_y = self.sp._scanarea_start.get('y')
-                _stop_x = self.sp._scanarea_stop.get('x')
-                _stop_y = self.sp._scanarea_stop.get('y')
-            elif screen=='tooltip':
-                _start_x = self.sp._tooltip_start.get('x')
-                _start_y = self.sp._tooltip_start.get('y')
-                _stop_x = self.sp._tooltip_stop.get('x')
-                _stop_y = self.sp._tooltip_stop.get('y')
+            _start_x = self.sp._scanarea_start.get('x')
+            _start_y = self.sp._scanarea_start.get('y')
+            _stop_x = self.sp._scanarea_stop.get('x')
+            _stop_y = self.sp._scanarea_stop.get('y')
 
             # [Draw box around Scan Area specified with mouse]:
             print('Pause. Drawing scan area with mouse:')
@@ -763,18 +691,63 @@ class bobber_bot():
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
-                self.calibrate_mouse_scanarea(screen)
-            else: 
+                self.calibrate_mouse_scanarea()
+
+    # [Have user calibrate location of Tooltip]:
+    def calibrate_mouse_tooltip(self):
+        # [Check for config files]:
+        config_filename = 'configs/scanarea.json'
+        if os.path.isfile(config_filename):
+            _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
+
+            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
+        else:
+            _use_calibrate_config = False
+
+        # [Calibrate mouse _coords for each action bar item used]:
+        if _use_calibrate_config == False:
+            mc = mouse_calibrator('calibrate_tooltip')
+            mc.run()
+
+        # [Load config file into globals]:
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+            self.sp._tooltip_start = configs['tooltip_start']
+            self.sp._tooltip_stop = configs['tooltip_stop']
+
+        if _use_calibrate_config == False:
+            _start_x = self.sp._tooltip_start.get('x')
+            _start_y = self.sp._tooltip_start.get('y')
+            _stop_x = self.sp._tooltip_stop.get('x')
+            _stop_y = self.sp._tooltip_stop.get('y')
+
+            # [Draw box around Scan Area specified with mouse]:
+            print('Pause. Drawing scan area with mouse:')
+            time.sleep(2)
+
+            _diff_x = (_stop_x - _start_x)
+            _diff_y = (_stop_y - _start_y)
+            pyautogui.moveTo(_start_x, _start_y, duration=1)
+            pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
+            pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
+            pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
+            pyautogui.moveTo(_start_x,_start_y, duration=1)
+
+            # [Check with user to make sure they like the scan area]:
+            _calibrate_good = input('[Tooltip Calibration Good? (y/n)]: ')
+            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
+            if _calibrate_good:
                 # [Screenshot for `tooltip_control_gray`]:
-                if screen=='tooltip':
-                    nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
-                    gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-                    imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
+                nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
+                gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+                imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
+            else:
+                self.calibrate_mouse_tooltip()
 
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
         # [Check for config files]:
-        config_filename = 'configs/config_mouse_actionbar.json'
+        config_filename = 'configs/mouse_actionbar.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Calibration config found for mouse_action bar | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -808,6 +781,12 @@ class mouse_calibrator(PyMouseEvent):
     _calibrating_scanarea = False
     _calibrating_mouse_mode = False
 
+    # [Trying to account for differences in OSX/Windows]:
+    if sys.platform == 'darwin':
+        _y_offset = -80
+    else:
+        _y_offset = -30
+
     def __init__(self, state=None):
         PyMouseEvent.__init__(self)
         if state == 'calibrate_mouse_actionbar':
@@ -827,6 +806,7 @@ class mouse_calibrator(PyMouseEvent):
             # [Windows might need this at 50% in WoW too?]:
             if sys.platform == 'darwin':
                 nemo = bb.sp.resize_image(nemo, scale_percent=50)
+
             cv2.imshow('Calibrate Scanarea', nemo)
             cv2.moveWindow('Calibrate Scanarea', 0,0)
         elif state == 'calibrate_tooltip':
@@ -836,22 +816,18 @@ class mouse_calibrator(PyMouseEvent):
             print('[Calibrating Tooltip: 3sec')
             time.sleep(3)
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
-            bb.sp.capture()
-            # [Displays bottom half, right side of screen for tooltip calibration]:
-            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=1) # MOD 2
 
-            # [Windows might need this at 50% in WoW too?]:
-            #if sys.platform == 'darwin':
-            #    nemo = bb.sp.resize_image(nemo, scale_percent=50)
+            bb.sp.capture()
+            # [Displays bottom half, right side for tooltip calibration]:
+            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=1) # MOD 2
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
-            #imageio.imwrite('cali_tool.png', nemo)
         else:
             print('[Mouse Listening]')
 
-    def save_mouse_calibration(self):
+    def save_actionbar_calibration(self):
         # [Load up current configs]:
-        config_filename = 'configs/config_mouse_actionbar.json'
+        config_filename = 'configs/mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -864,37 +840,40 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
-    def save_mouse_scanarea(self):
+    def save_scanarea(self):
         # [Load up current configs]:
-        config_filename = 'configs/config_mouse_scanarea.json'
+        config_filename = 'configs/scanarea.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
-        # [Trying to account for differences in OSX/Windows]:
-        if sys.platform == 'darwin':
-            _y_offset = -80
-        else:
-            _y_offset = -30
-
-        if self._calibrating_scanarea:
-            self._scanarea_start['scanarea_start']['y'] += _y_offset
-            self._scanarea_stop['scanarea_stop']['y'] += _y_offset
-        elif self._calibrating_tooltip:
-            self._tooltip_start['tooltip_start']['y'] += _y_offset # _y_offset
-            self._tooltip_stop['tooltip_stop']['y'] += _y_offset # _y_offset
-            self._tooltip_start['tooltip_start']['y'] += int(bb.sp._height/2)
-            self._tooltip_start['tooltip_start']['x'] += int(bb.sp._width/2)
-            self._tooltip_stop['tooltip_stop']['y'] += int(bb.sp._height/2)
-            self._tooltip_stop['tooltip_stop']['x'] += int(bb.sp._width/2)
-            # ^(Tooltip calibration starts from lower half, right half)
+        self._scanarea_start['scanarea_start']['y'] += self._y_offset
+        self._scanarea_stop['scanarea_stop']['y'] += self._y_offset
 
         # [Update config for locations]:
-        if self._calibrating_scanarea:
-            configs.update(self._scanarea_start)
-            configs.update(self._scanarea_stop)
-        elif self._calibrating_tooltip:
-            configs.update(self._tooltip_start)
-            configs.update(self._tooltip_stop)
+        configs.update(self._scanarea_start)
+        configs.update(self._scanarea_stop)
+
+        # [Save values back to config file to update values]:
+        with open(config_filename, 'w') as fp:
+            json.dump(configs, fp)
+
+    def save_tooltip(self):
+        # [Load up current configs]:
+        config_filename = 'configs/tooltip.json'
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+
+        self._tooltip_start['tooltip_start']['y'] += self._y_offset
+        self._tooltip_stop['tooltip_stop']['y'] += self._y_offset
+        self._tooltip_start['tooltip_start']['y'] += int(bb.sp._height/2)
+        self._tooltip_start['tooltip_start']['x'] += int(bb.sp._width/2)
+        self._tooltip_stop['tooltip_stop']['y'] += int(bb.sp._height/2)
+        self._tooltip_stop['tooltip_stop']['x'] += int(bb.sp._width/2)
+        # ^(Tooltip calibration starts from lower half, right half)
+
+        # [Update config for locations]:
+        configs.update(self._tooltip_start)
+        configs.update(self._tooltip_stop)
 
         # [Save values back to config file to update values]:
         with open(config_filename, 'w') as fp:
@@ -921,42 +900,46 @@ class mouse_calibrator(PyMouseEvent):
             else:
                 print('[Ending Calibration]')
                 self._calibrating_mouse_mode = False
-                self.save_mouse_calibration()
+                self.save_actionbar_calibration()
                 self.stop()
 
         # [Code for Scan Area Calibration]:
-        if button==1 and (self._calibrating_scanarea or self._calibrating_tooltip):
+        if button==1 and self._calibrating_scanarea:
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
 
             if press:
-                if self._calibrating_scanarea:
-                    self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
-                elif self._calibrating_tooltip:
-                    self._tooltip_start = {"tooltip_start" : { "x":int_x, "y":int_y }}
+                self._scanarea_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
             else:
-                if self._calibrating_scanarea:
-                    self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
-                elif self._calibrating_tooltip:
-                    self._tooltip_stop = {"tooltip_stop" : { "x":int_x, "y":int_y }}
+                self._scanarea_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
+
 
             # [Send coords back over to bobberbot]:
-            if self._scanarea_stop is not None or self._tooltip_stop is not None:
-                self.save_mouse_scanarea()
+            if self._scanarea_stop is not None:
+                self.save_scanarea()
                 self._calibrating_scanarea = False
+                cv2.destroyAllWindows()
+                self.stop()
+
+        # [Code for Scan Area Calibration]:
+        if button==1 and self._calibrating_tooltip:
+            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+
+            if press:
+                self._tooltip_start = {"tooltip_start" : { "x":int_x, "y":int_y }}
+            else:
+                self._tooltip_stop = {"tooltip_stop" : { "x":int_x, "y":int_y }}
+
+            # [Send coords back over to bobberbot]:
+            if self._tooltip_stop is not None:
+                self.save_tooltip()
                 self._calibrating_tooltip = False
                 cv2.destroyAllWindows()
                 self.stop()
 
-        '''
-        # [Mouse-override for testing]:
-        if (button==1 and press) and (self._calibrating_scanarea==False and self._calibrating_tooltip==False and self._calibrating_mouse_mode==False):
-            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
-        '''
 
-# [0]: tooltip_control_gray.png
-# [1]: Change tooltip calibration from `calibrate_image(screen='tooltip')` to `calibrate_mouse_scanarea(screen='tooltip')` 
-# [2]: Change _check_bobber_loc to use SSIM / `check_tooltip()` (if SSIM doens't work, move HSV check here.)
+# [1]: CHECK work.. as best as possible.
 # [-]: After switching tooltip calibration we can ditch save_square for save_rect and cleanup~
+# [-]: Command to give bot for `calibrate_relogin()` to get `login_control_gray` for user
 # [0]: Set config/variables for `fishing skill, fishing pole, baubles`
 # [1]: Set reasonable defaults for config/* files for Master
 # [2]: Check for death upon login?
@@ -969,11 +952,7 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        bb.calibrate_mouse_scanarea('tooltip')
-        #print(bb.check_tooltip())
-        # re-enable SSIM
-        # run calibrate (should drop control image in folder)
-        # run calibrate + SSIM on newly added control.
+        
 
 print('[fin.]')
 
