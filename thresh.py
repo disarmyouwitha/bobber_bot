@@ -668,9 +668,7 @@ class bobber_bot():
         # [Convert images to grayscale]:
         gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
         gray_control = imageio.imread('img/tooltip_control_gray.png')
-        #orig_control = imageio.imread('tooltip_control.png')
-        #gray_control = cv2.cvtColor(orig_control, cv2.COLOR_BGR2GRAY)
-        imageio.imwrite('tooltip_test_gray.png', gray_test)
+        imageio.imwrite('tooltip_test_gray.png', gray_test) #
 
         (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
@@ -711,7 +709,7 @@ class bobber_bot():
         if os.path.isfile(config_filename):
             if screen=='scanarea':
                 _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
-            else:
+            elif screen=='tooltip':
                 _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
 
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -723,7 +721,7 @@ class bobber_bot():
             # [Display picture of screen for user to click]:
             if screen=='scanarea':
                 mc = mouse_calibrator('calibrate_scanarea')
-            else:
+            elif screen=='tooltip':
                 mc = mouse_calibrator('calibrate_tooltip')
             mc.run()
 
@@ -733,7 +731,7 @@ class bobber_bot():
             if screen=='scanarea':
                 self.sp._scanarea_start = configs['scanarea_start']
                 self.sp._scanarea_stop = configs['scanarea_stop']
-            else:
+            elif screen=='tooltip':
                 self.sp._tooltip_start = configs['tooltip_start']
                 self.sp._tooltip_stop = configs['tooltip_stop']
 
@@ -743,7 +741,7 @@ class bobber_bot():
                 _start_y = self.sp._scanarea_start.get('y')
                 _stop_x = self.sp._scanarea_stop.get('x')
                 _stop_y = self.sp._scanarea_stop.get('y')
-            else:
+            elif screen=='tooltip':
                 _start_x = self.sp._tooltip_start.get('x')
                 _start_y = self.sp._tooltip_start.get('y')
                 _stop_x = self.sp._tooltip_stop.get('x')
@@ -761,15 +759,17 @@ class bobber_bot():
             pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
             pyautogui.moveTo(_start_x,_start_y, duration=1)
 
-            # [Screenshot for debugging]:
-            nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
-            imageio.imwrite('calibrate_scanarea.png', nemo)
-
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
                 self.calibrate_mouse_scanarea(screen)
+            else: 
+                # [Screenshot for `tooltip_control_gray`]:
+                if screen=='tooltip':
+                    nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
+                    gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+                    imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
 
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
@@ -953,25 +953,27 @@ class mouse_calibrator(PyMouseEvent):
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
         '''
 
-# [3]: Change tooltip_calibration to clip the rect rather than hardcoded save_square.
-#    > Change tooltip_check to SSIM?
-# [-]: Code cleanup.
+# [0]: tooltip_control_gray.png
+# [1]: Change tooltip calibration from `calibrate_image(screen='tooltip')` to `calibrate_mouse_scanarea(screen='tooltip')` 
+# [2]: Change _check_bobber_loc to use SSIM / `check_tooltip()` (if SSIM doens't work, move HSV check here.)
+# [-]: After switching tooltip calibration we can ditch save_square for save_rect and cleanup~
 # [0]: Set config/variables for `fishing skill, fishing pole, baubles`
-# [0]: Set reasonable defaults for config/* files for Master
-# [1]: Change save_square to call save_rect
+# [1]: Set reasonable defaults for config/* files for Master
 # [2]: Check for death upon login?
-# [4]: Ability to recalibrate during loop
-# [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands.
-#    > ability to start/stop fishing, etc
+# [3]: Ability to recalibrate during loop
+# [4]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands (ability to start/stop fishing, etc)
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = False
+    _DEV = True
     if _DEV==False:
         bb.start()
     else:
         print('[_DEV testing]:')
         bb.calibrate_mouse_scanarea('tooltip')
-        print(bb.check_tooltip())
+        #print(bb.check_tooltip())
+        # re-enable SSIM
+        # run calibrate (should drop control image in folder)
+        # run calibrate + SSIM on newly added control.
 
 print('[fin.]')
 
