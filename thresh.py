@@ -150,9 +150,9 @@ class ScreenPixel(object):
         pass
 
     # [Display calibrate images to confirm they look good]:
-    def calibrate_image(self):
+    def calibrate_bobber(self):
         # [Check for config files]:
-        config_filename = 'configs/config_bobber.json'
+        config_filename = 'configs/bobber.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Use calibration from config for bobber?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -179,7 +179,7 @@ class ScreenPixel(object):
                 nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
                 nemo = self.resize_image(nemo, scale_percent=50)
             else:
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
+                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) #MOD2?
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
 
@@ -284,7 +284,7 @@ class ScreenPixel(object):
             self.bobber_upper_hsv = upper_hsv
         else:
             # [Bad calibration, try again]:
-            self.calibrate_image()
+            self.calibrate_bobber()
 
     def thresh_image(self):
         self.capture()
@@ -292,7 +292,8 @@ class ScreenPixel(object):
             nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
             nemo = self.resize_image(nemo, scale_percent=50)
         else:
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1)
+            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) #MOD2?
+
         lower_hsv = self.bobber_lower_hsv
         upper_hsv = self.bobber_upper_hsv
 
@@ -504,7 +505,7 @@ class bobber_bot():
         self.calibrate_mouse_tooltip()
 
         # [Calibrate HSV for bobber]:
-        self.sp.calibrate_image()
+        self.sp.calibrate_bobber()
 
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
@@ -623,7 +624,11 @@ class bobber_bot():
 
     def check_tooltip(self):
         self.sp.capture()
-        nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1) # MOD
+
+        if sys.platform == 'darwin':
+            nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=2)
+        else:
+            nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1) #MOD2?
 
         # [Convert images to grayscale]:
         gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
@@ -696,7 +701,7 @@ class bobber_bot():
     # [Have user calibrate location of Tooltip]:
     def calibrate_mouse_tooltip(self):
         # [Check for config files]:
-        config_filename = 'configs/scanarea.json'
+        config_filename = 'configs/tooltip.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
 
@@ -738,7 +743,10 @@ class bobber_bot():
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good:
                 # [Screenshot for `tooltip_control_gray`]:
-                nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) # MOD 2
+                if sys.platform == 'darwin':
+                    nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=2)
+                else:
+                    nemo = self.sp.save_rect({"x": _start_x, "y":_start_y}, {"x":_stop_x, "y":_stop_y}, mod=1) #MOD2?
                 gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
                 imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
             else:
@@ -818,8 +826,13 @@ class mouse_calibrator(PyMouseEvent):
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
 
             bb.sp.capture()
+
             # [Displays bottom half, right side for tooltip calibration]:
-            nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=1) # MOD 2
+            if sys.platform == 'darwin':
+                nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=2)
+            else:
+                nemo = bb.sp.save_rect({"x": int(bb.sp._width/2), "y": int(bb.sp._height/2)}, {"x": int(bb.sp._width), "y": int(bb.sp._height)}, mod=1) #MOD2?
+
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
         else:
@@ -947,12 +960,17 @@ class mouse_calibrator(PyMouseEvent):
 # [4]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands (ability to start/stop fishing, etc)
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = True
+    _DEV = False
     if _DEV==False:
         bb.start()
     else:
         print('[_DEV testing]:')
-        
+        # [Check tooltip/calibration]:
+        #bb.calibrate_mouse_tooltip()
+        #print(bb.check_tooltip())
 
+        # [Check scanarea/bobber calibration]:
+        #bb.calibrate_mouse_scanarea()
+        #bb.sp.calibrate_bobber()
 print('[fin.]')
 

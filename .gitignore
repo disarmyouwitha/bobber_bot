@@ -1,4 +1,6 @@
 .DS_Store
-configs/pass.txt
 configs/*.json
+configs/pass.txt
+img/login_control_gray.png
+img/tooltip_control_gray.png
 *.png
