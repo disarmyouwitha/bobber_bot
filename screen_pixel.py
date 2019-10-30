@@ -6,6 +6,9 @@ import time
 import numpy
 import imageio
 import playsound
+import pyautogui
+pyautogui.PAUSE = 0
+pyautogui.FAILSAFE = True
 
 # [Import Quartz for OSX, else use MSS]: (for screen_pixel.capture())
 if sys.platform == 'darwin':
