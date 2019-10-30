@@ -479,7 +479,7 @@ class bobber_bot():
 # [0]: Check `check_login` to make sure MOD is correct in WINDOWS
 # [1]: Set reasonable defaults for config/* files for Master
 # [2]: Check for death upon login?
-# [3]: Command to give bot for `calibrate_relogin()` to get `login_control_gray` for user
+# [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
