@@ -89,8 +89,11 @@ class bobber_bot():
     _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
+    _fishing_pole_key = None
     _fishing_skill_loc = None
+    _fishing_skill_key = None
     _fishing_bauble_loc = None
+    _fishing_bauble_key = None
 
     # [BobberBot Settings]:
     _use_baubles = False
@@ -123,7 +126,7 @@ class bobber_bot():
             time.sleep(2)
             pyautogui.click(x=self._fishing_skill_loc.get('x'), y=self._fishing_skill_loc.get('y'), button='left', clicks=1)
         else:
-            pyautogui.typewrite('8')
+            pyautogui.typewrite(self._fishing_skill_key)
 
         time.sleep(3) # Wait so that we don't try and find old bobber as it fades (? needed now?)
         self._bobber_reset = True
@@ -141,8 +144,8 @@ class bobber_bot():
                 # [Click Fishing pole]:
                 pyautogui.click(x=self._fishing_pole_loc.get('x'), y=self._fishing_pole_loc.get('y'), button='left', clicks=1)
             else:
-                pyautogui.typewrite('9') # fishing bauble on action bar
-                pyautogui.typewrite('7') # fishing pole on action bar
+                pyautogui.typewrite(self._fishing_bauble_key) # fishing bauble on action bar
+                pyautogui.typewrite(self._fishing_pole_key) # fishing pole on action bar
 
             time.sleep(10) # sleep while casting bauble~
             self._bauble_elapsed = 0
@@ -229,6 +232,9 @@ class bobber_bot():
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
             self.calibrate_mouse_actionbar()
+        else:
+            self.load_skills_actionbar()
+            #^(else, load from skills config)
 
         input('[Enter to start bot!]: (3sec delay)')
         self._timer_start = time.time()
@@ -457,14 +463,23 @@ class bobber_bot():
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
 
+    # [Load config file into globals]:
+    def load_skills_actionbar(self):
+        config_filename = 'configs/skills_actionbar.json'
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+            self._fishing_pole_key = configs['fishing_pole'].get('key')
+            self._fishing_skill_key = configs['fishing_skill'].get('key')
+            self._fishing_bauble_key = configs['fishing_bauble'].get('key')
+
+
+# [0]: Ability to give commands to bot | Ability to recalibrate during loop
+# [1]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
 # [-]: Check `check_login` to make sure MOD is correct in OSX
-# [-]: Check `check_login` to make sure MOD is correct in WINDOWS
-# [0]: Set config/variables for `fishing skill, fishing pole, baubles`
+# [0]: Check `check_login` to make sure MOD is correct in WINDOWS
 # [1]: Set reasonable defaults for config/* files for Master
 # [2]: Check for death upon login?
-# [3]: Ability to recalibrate during loop
-# [-]: Command to give bot for `calibrate_relogin()` to get `login_control_gray` for user
-# [4]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands (ability to start/stop fishing, etc)
+# [3]: Command to give bot for `calibrate_relogin()` to get `login_control_gray` for user
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
