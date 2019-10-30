@@ -9,10 +9,8 @@ import imageio
 import pyautogui
 import playsound
 import contextlib
-import skimage.metrics
-
-# [Import local classes]:
 import screen_pixel
+import skimage.metrics
 import mouse_calibrator
 
 pyautogui.PAUSE = 0
@@ -487,12 +485,8 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        # [Check tooltip/calibration]:
         #bb.calibrate_mouse_tooltip()
         #print(bb.check_tooltip())
 
-        # [Check scanarea/bobber calibration]:
-        #bb.calibrate_mouse_scanarea()
-        #bb.sp.calibrate_bobber()
 print('[fin.]')
 
