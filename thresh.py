@@ -153,7 +153,6 @@ class bobber_bot():
         #[Capture Login Rect]:
         print('[Checking for login screen / Checking for disconnect] 2sec..')
         time.sleep(2)
-        self.sp.capture()
 
         # [Uses `mod=2` because mouse_pixel is half of screen_pixel]: (?)
         if sys.platform == 'darwin':
@@ -298,7 +297,7 @@ class bobber_bot():
                     self._audio_stream.close()
                     self.pa.terminate()
 
-                    # [Die Young, Leave beautiful code]:
+                    # [Die Young, Leave a beautiful shell]:
                     sys.exit(1)
 
         # [Stop Audio Stream]:
@@ -343,7 +342,6 @@ class bobber_bot():
         return 0
 
     def check_tooltip(self):
-        self.sp.capture()
         nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
 
         # [Convert images to grayscale]:
@@ -429,7 +427,6 @@ class bobber_bot():
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good: 
                 # [Screenshot for `tooltip_control_gray`]:
-                self.sp.capture()
                 nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
                 gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
                 imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)

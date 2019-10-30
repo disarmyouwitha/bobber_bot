@@ -94,6 +94,7 @@ class screen_pixel(object):
         stop_y = (_stop_y*mod)
 
         # [Trim _numpy array to rect]:
+        self.capture()
         return self._numpy[start_y:stop_y,start_x:stop_x]
 
     def draw_rect(self, json_coords_start, json_coords_stop, mod=2):
@@ -148,7 +149,6 @@ class screen_pixel(object):
             time.sleep(3)
 
             # [Capture of calibration image]:
-            self.capture()
             if sys.platform == 'darwin':
                 nemo = self.grab_rect(self._scanarea_start, self._scanarea_stop, mod=2)
                 nemo = self.resize_image(nemo, scale_percent=50)
@@ -261,7 +261,6 @@ class screen_pixel(object):
             self.calibrate_bobber()
 
     def thresh_image(self):
-        self.capture()
         if sys.platform == 'darwin':
             nemo = self.grab_rect(self._scanarea_start, self._scanarea_stop, mod=2)
             nemo = self.resize_image(nemo, scale_percent=50)
