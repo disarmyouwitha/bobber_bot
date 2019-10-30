@@ -37,7 +37,7 @@ The other tricky part is setting up the sound.. `audio_callback()` is using the 
 > [2]: And you should be done! Use `audio.py` to figure out what index your Soundflower device is!
 
 
-# [SETTING up audio_callback for WINDOWS]:
+# [Setting up audio_callback for WINDOWS]:
 > [0]: Open Sound panel (Type "Sound" into system search)
 
 > [1]: Select Speakers as the default playback device
@@ -71,16 +71,11 @@ The other tricky part is setting up the sound.. `audio_callback()` is using the 
 # [thresh.py]:
 > Running this script will start the "main loop" which will take you through calibration, then start the bot!
 
+>
 
+>
 
-# [HIGHLY RECOMMENDED]:
-# DLMS took care of most of my problems..
-# DOWNLOAD ADDON: https://www.warcrafttavern.com/addons/dlms-dynamic-loot-management-system/
-> I use this, rather than autosell, to blacklist trash fish that would otherwise fill up my inventory.
-
-
-
-# [INSTALLING MODULES]:
+# [INSTALLING NOTES]:
 
 # [OSX]:
 > brew install python3
@@ -116,3 +111,16 @@ The other tricky part is setting up the sound.. `audio_callback()` is using the 
 > python -m pip install scikit-image
 
 > python -m pip install opencv-python
+
+>
+
+>
+
+# [HIGHLY RECOMMENDED]:
+> DLMS took care of most of my inventory problems.. I just add trashfish to my blacklist:
+> `/dlms b_list add [item_link to trash fish]` in WoW
+
+> DOWNLOAD ADDON: 
+> https://www.warcrafttavern.com/addons/dlms-dynamic-loot-management-system/
+
+> I use this, rather than autosell, to blacklist trash fish that would otherwise fill up my inventory.

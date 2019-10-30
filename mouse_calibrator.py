@@ -8,6 +8,7 @@ from pymouse import PyMouseEvent
 class mouse_calibrator(PyMouseEvent):
     _sp = None
     _click_cnt = 0
+    _y_offset = None
     _tooltip_stop = None
     _tooltip_start = None
     _scanarea_stop = None
@@ -19,15 +20,15 @@ class mouse_calibrator(PyMouseEvent):
     _calibrating_scanarea = False
     _calibrating_mouse_mode = False
 
-    # [Trying to account for differences in OSX/Windows]:
-    if sys.platform == 'darwin':
-        _y_offset = -80
-    else:
-        _y_offset = -30
-
     def __init__(self, state=None):
         PyMouseEvent.__init__(self)
         self._sp = screen_pixel.screen_pixel()
+
+        # [Trying to account for differences in OSX/Windows]:
+        if sys.platform == 'darwin':
+            self._y_offset = -80
+        else:
+            self._y_offset = -30
 
         if state == 'calibrate_mouse_actionbar':
             print('[Calibrating fishing_pole action bar location! Alt-tab, go left-click it && come back here!]')
@@ -58,11 +59,7 @@ class mouse_calibrator(PyMouseEvent):
             self._calibrating_tooltip = True
 
             self._sp.capture()
-            nemo = self._sp.save_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1)
-            
-            # [Windows might need this at 50% in WoW too?]:
-            #if sys.platform == 'darwin':
-            #    nemo = self._sp.resize_image(nemo, scale_percent=50)
+            nemo = self._sp.grab_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1)
 
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)

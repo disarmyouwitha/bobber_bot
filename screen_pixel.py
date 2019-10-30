@@ -79,7 +79,7 @@ class screen_pixel(object):
         return nemo_scaled 
 
     # [To facilitate grabbing Scan Area]:
-    def save_rect(self, json_coords_start, json_coords_stop, mod=2):
+    def grab_rect(self, json_coords_start, json_coords_stop, mod=2):
         _start_x = json_coords_start.get('x')
         _start_y = json_coords_start.get('y')
         start_x = (_start_x*mod)
@@ -92,6 +92,29 @@ class screen_pixel(object):
 
         # [Trim _numpy array to rect]:
         return self._numpy[start_y:stop_y,start_x:stop_x]
+
+    def draw_rect(self, json_coords_start, json_coords_stop, mod=2):
+        _start_x = json_coords_start.get('x')
+        _start_y = json_coords_start.get('y')
+        _start_x = (_start_x*mod)
+        _start_y = (_start_y*mod)
+
+        _stop_x = json_coords_stop.get('x')
+        _stop_y = json_coords_stop.get('y')
+        _stop_x = (_stop_x*mod)
+        _stop_y = (_stop_y*mod)
+
+        # [Draw box around Scan Area specified with mouse]:
+        print('Pause. Drawing scan area with mouse:')
+        time.sleep(2)
+
+        _diff_x = (_stop_x - _start_x)
+        _diff_y = (_stop_y - _start_y)
+        pyautogui.moveTo(_start_x, _start_y, duration=1)
+        pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
+        pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)
+        pyautogui.moveTo(_start_x,(_start_y+_diff_y), duration=1)
+        pyautogui.moveTo(_start_x,_start_y, duration=1)
 
     def nothing(self, x):
         #print('Trackbar value: ' + str(x))
@@ -124,10 +147,10 @@ class screen_pixel(object):
             # [Capture of calibration image]:
             self.capture()
             if sys.platform == 'darwin':
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
+                nemo = self.grab_rect(self._scanarea_start, self._scanarea_stop, mod=2)
                 nemo = self.resize_image(nemo, scale_percent=50)
             else:
-                nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) #MOD2?
+                nemo = self.grab_rect(self._scanarea_start, self._scanarea_stop, mod=1)
             lower_hsv = self.bobber_lower_hsv
             upper_hsv = self.bobber_upper_hsv
 
@@ -237,10 +260,10 @@ class screen_pixel(object):
     def thresh_image(self):
         self.capture()
         if sys.platform == 'darwin':
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=2)
+            nemo = self.grab_rect(self._scanarea_start, self._scanarea_stop, mod=2)
             nemo = self.resize_image(nemo, scale_percent=50)
         else:
-            nemo = self.save_rect(self._scanarea_start, self._scanarea_stop, mod=1) #MOD2?
+            nemo = self.grab_rect(self._scanarea_start, self._scanarea_stop, mod=1)
 
         lower_hsv = self.bobber_lower_hsv
         upper_hsv = self.bobber_upper_hsv
