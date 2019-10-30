@@ -118,7 +118,7 @@ class screen_pixel(object):
             _calibrate_good = True
             self.thresh_image()
         else:
-            print('[Calibrating bobber in 3sec!]:')
+            input('[Enter to calibrate Bobber!]: 3sec')
             time.sleep(3)
 
             # [Capture of calibration image]:

@@ -50,23 +50,20 @@ class mouse_calibrator(PyMouseEvent):
             cv2.imshow('Calibrate Scanarea', nemo)
             cv2.moveWindow('Calibrate Scanarea', 0,0)
         elif state == 'calibrate_tooltip':
+            input('[Enter to calibrate Tooltip]: 3sec')
+            time.sleep(3)
+            print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
             self._tooltip_stop = None
             self._tooltip_start = None
             self._calibrating_tooltip = True
-            print('[Calibrating Tooltip]: 3sec')
-            time.sleep(3)
-            print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
 
             self._sp.capture()
+            nemo = self._sp.save_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1)
+            
+            # [Windows might need this at 50% in WoW too?]:
+            #if sys.platform == 'darwin':
+            #    nemo = self._sp.resize_image(nemo, scale_percent=50)
 
-            # [Displays bottom half, right side for tooltip calibration]:
-            if sys.platform == 'darwin':
-                _mod = 1 #MOD2?
-            else:
-                _mod = 1 #MOD2?
-
-            #MOD1? (remove above IF?)
-            nemo = self._sp.save_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=_mod)
             cv2.imshow('Calibrate Tooltip', nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
         else:

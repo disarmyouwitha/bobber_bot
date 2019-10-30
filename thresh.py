@@ -156,7 +156,7 @@ class bobber_bot():
         self.sp.capture()
 
         if sys.platform == 'darwin':
-            _mod = 2
+            _mod = 2 #MOD1??
         else:
             _mod = 1
 
@@ -347,7 +347,7 @@ class bobber_bot():
         self.sp.capture()
 
         if sys.platform == 'darwin':
-            _mod = 2
+            _mod = 1
         else:
             _mod = 1 #MOD2?
         nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=_mod)
@@ -377,8 +377,12 @@ class bobber_bot():
     def draw_rect(self, json_coords_start, json_coords_stop, mod=2):
         _start_x = json_coords_start.get('x')
         _start_y = json_coords_start.get('y')
+        print(_start_x)
+        print(_start_y)
         _start_x = (_start_x*mod)
         _start_y = (_start_y*mod)
+        print(_start_x)
+        print(_start_y)
 
         _stop_x = json_coords_stop.get('x')
         _stop_y = json_coords_stop.get('y')
@@ -421,10 +425,10 @@ class bobber_bot():
 
         if _use_calibrate_config == False:
             if sys.platform == 'darwin':
-                _mod = 2
+                _mod = 1 #MOD2?
             else:
-                _mod = 1
-            self.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod)
+                _mod = 1 #MOD2?
+            self.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=_mod) #MOD2? (remove if statement above)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
@@ -455,11 +459,7 @@ class bobber_bot():
             self.sp._tooltip_stop = configs['tooltip_stop']
 
         if _use_calibrate_config == False:
-            if sys.platform == 'darwin':
-                _mod = 1 #MOD2?
-            else:
-                _mod = 1 #MOD2?
-            self.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=_mod) #MOD1? (remove above IF?)
+            self.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Tooltip Calibration Good? (y/n)]: ')
@@ -471,6 +471,7 @@ class bobber_bot():
                     _mod = 1 #MOD2?
 
                 # [Screenshot for `tooltip_control_gray`]:
+                self.sp.capture()
                 nemo = self.sp.save_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=_mod) #MOD1? (remove above IF?)
                 gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
                 imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
@@ -501,7 +502,7 @@ class bobber_bot():
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
 
-
+# [-]: Remove #MODs
 # [0]: Set config/variables for `fishing skill, fishing pole, baubles`
 # [1]: Set reasonable defaults for config/* files for Master
 # [2]: Check for death upon login?
