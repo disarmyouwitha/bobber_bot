@@ -166,9 +166,8 @@ class bobber_bot():
         gray_control = imageio.imread('img/login_control_gray.png')
 
         (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
-        #diff = (diff * 255).astype("uint8")
 
-        print("SSIM: {}".format(score))
+        #print("SSIM: {}".format(score))
         return True if (score > .90) else False
 
     # We have determined that we have disconnected.. How to reconnect?
@@ -355,7 +354,7 @@ class bobber_bot():
 
         (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
-        print("SSIM: {}".format(score))
+        #print("SSIM: {}".format(score))
         return True if (score > .90) else False
 
     # [Move mouse to _coords /capture/ check for tooltip]:
@@ -473,11 +472,10 @@ class bobber_bot():
 
 # [0]: Ability to give commands to bot | Ability to recalibrate during loop
 # [1]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
-# [-]: Check `check_login` to make sure MOD is correct in OSX
+# [-]: Set reasonable defaults for config/* files for Master
 # [0]: Check `check_login` to make sure MOD is correct in WINDOWS
-# [1]: Set reasonable defaults for config/* files for Master
-# [2]: Check for death upon login?
-# [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
+# [1]: Check for death upon login?
+# [2]: Write `calibrate_relogin()` to get `login_control_gray` for user
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
@@ -485,8 +483,5 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        #bb.calibrate_mouse_tooltip()
-        #print(bb.check_tooltip())
 
 print('[fin.]')
-
