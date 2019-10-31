@@ -57,7 +57,7 @@ class mouse_calibrator(PyMouseEvent):
             self._tooltip_stop = None
             self._tooltip_start = None
             self._calibrating_tooltip = True
-
+            self._sp.capture() #Capture so we can get width/height
             nemo = self._sp.grab_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1)
 
             cv2.imshow('Calibrate Tooltip', nemo)
