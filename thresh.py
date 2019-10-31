@@ -470,12 +470,13 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [0]: Ability to give commands to bot | Ability to recalibrate during loop
-# [1]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
-# [-]: Set reasonable defaults for config/* files for Master
 # [0]: Check `check_login` to make sure MOD is correct in WINDOWS
-# [1]: Check for death upon login?
-# [2]: Write `calibrate_relogin()` to get `login_control_gray` for user
+# [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
+# [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
+# [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
+# ^(Need more general purpose function for calibrating coords for SSIM)
+# [4]: Ability to give commands to bot | Ability to recalibrate during loop
+# [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
