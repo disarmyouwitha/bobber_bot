@@ -1,3 +1,4 @@
+import os
 import sys
 import cv2
 import json
@@ -54,7 +55,7 @@ class mouse_calibrator(PyMouseEvent):
             time.sleep(3)
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
 
-            self._sp.capture() #Capture so we can get width/height
+            self._sp.capture() #Capture so we can get width/height, pass in the numpy array:
             self.nemo = self._sp.grab_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1, nemo=self._sp._numpy)
 
             cv2.imshow('Calibrate Tooltip', self.nemo)
@@ -77,19 +78,40 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
+    def get_tooltip_control_gray_etc(self, _coords_start, _coords_stop):
+        # [Screenshot for `tooltip_control_gray`]:
+        nemo = self._sp.grab_rect(_coords_start['tooltip_start'], _coords_stop['tooltip_stop'], mod=1, nemo=self.nemo)
+        gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+        imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
+
+        # [Tooltip calibration starts from lower right half of screen]:
+        _coords_start['tooltip_start']['y'] += int(self._sp._height/2)
+        _coords_start['tooltip_start']['x'] += int(self._sp._width/2)
+        _coords_stop['tooltip_stop']['y'] += int(self._sp._height/2)
+        _coords_stop['tooltip_stop']['x'] += int(self._sp._width/2)
+
+        return (_coords_start, _coords_stop)
+
     # [general purpose save]:
-    def save_box_coords(self, _coords_start, _coords_stop, config_filename):
+    def save_box_coords(self, _coords_start, _coords_stop, config_name):
         # [Load up current configs]:
+        config_filename = 'configs/{0}.json'.format(config_name)
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
         # [Add _y_offset]:
-        if 'scanarea' in config_filename:
+        #_coords_start[config_name+'_start']['y'] += self._y_offset
+        #_coords_stop[config_name+'_stop']['y'] += self._y_offset
+        if 'scanarea' in config_name:
             _coords_start['scanarea_start']['y'] += self._y_offset
             _coords_stop['scanarea_stop']['y'] += self._y_offset
-        elif 'tooltip' in config_filename:
+        elif 'tooltip' in config_name:
             _coords_start['tooltip_start']['y'] += self._y_offset
             _coords_stop['tooltip_stop']['y'] += self._y_offset
+
+        # [Tooltip specific modifications]:
+        if 'tooltip' in config_name:
+            (_coords_start, _coords_stop) = self.get_tooltip_control_gray_etc(_coords_start, _coords_stop)
 
         # [Update config for locations]:
         configs.update(_coords_start)
@@ -134,7 +156,7 @@ class mouse_calibrator(PyMouseEvent):
 
             # [Send coords back over to bobberbot]:
             if self._coords_stop is not None:
-                self.save_box_coords(self._coords_start, self._coords_stop, 'configs/scanarea.json')
+                self.save_box_coords(self._coords_start, self._coords_stop, 'scanarea')
                 cv2.destroyAllWindows()
                 self.stop()
 
@@ -149,6 +171,6 @@ class mouse_calibrator(PyMouseEvent):
 
             # [Send coords back over to bobberbot]:
             if self._coords_stop is not None:
-                self.save_box_coords(self._coords_start, self._coords_stop, 'configs/tooltip.json')
+                self.save_box_coords(self._coords_start, self._coords_stop, 'tooltip')
                 cv2.destroyAllWindows()
                 self.stop()
