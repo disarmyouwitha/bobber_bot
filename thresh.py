@@ -409,7 +409,7 @@ class bobber_bot():
     def calibrate_mouse_tooltip(self):
         # [Check for config files]:
         config_filename = 'configs/tooltip.json'
-        if os.path.isfile(config_filename):
+        if os.path.isfile('img/tooltip_control_gray.png'):
             _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
 
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
