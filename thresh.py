@@ -94,7 +94,7 @@ class bobber_bot():
 
     # [I've been keeping threshold lower on my windows box because I actually have to listen to it(?)ss]:
     if sys.platform == 'darwin':
-        _audio_threshold = 1600
+        _audio_threshold = 1000
     else:
         _audio_threshold = 200
 
