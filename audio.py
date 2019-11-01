@@ -23,21 +23,20 @@ def audio_callback(in_data, frame_count, time_info, status):
 
     return data, pyaudio.paContinue
 
+
+
+# [CHANGE DEV INDEX HERE TO TEST]:
 def listen_splash():
     pa = pyaudio.PyAudio()
 
-    dev_idx = 0 # Microphone as input
-    dev_idx = 1 # Speakers as input
-    # ^ System Dependant
-
-    # [Windows fork of pyaudio allows us to call speakers as loopback device]: (?)
     if sys.platform == 'darwin':
-        _audio_stream = pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+        dev_idx = 2 # For my OSX machine it's 2, might be different for you
     else:
-        #_audio_stream = pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback, as_loopback=True)
-        _audio_stream = pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+        dev_idx = 1 # For my windows machine it's 1, might be different for you
+    # ^(System Dependant, use audio.py to configure)
 
-    #playsound.playsound('audio/sms_alert.mp3')
+    _audio_stream = pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, input_device_index=dev_idx, stream_callback=audio_callback)
+
     _timer_elapsed = 0
     _timer_start = time.time()
     _audio_stream.start_stream()
@@ -76,7 +75,7 @@ def detect_devices():
         print('-------')
 
     print()
-    print('[Now go set `dev_idx` to Soundflower/Mixer && uncomment `listen_splash(2000)` to check that the program "hears" your speaker output]')
+    print('[Now go set `dev_idx` to Soundflower/Mixer index && uncomment `listen_splash()` to check that the program "hears" your speakers output]')
     print()
 
 
