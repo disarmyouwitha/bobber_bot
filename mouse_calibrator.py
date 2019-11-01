@@ -11,15 +11,10 @@ class mouse_calibrator(PyMouseEvent):
     _sp = None
     _nemo = None
     _state = None
-    _click_cnt = 0
     _y_offset = None
     _coords_stop = None
     _coords_start = None
-    ### THESE CAN GO NEXT:
-    _fishing_pole_loc = None
-    _fishing_skill_loc = None
-    _fishing_bauble_loc = None
-    ### THESE CAN GO NEXT^
+    _yield_skills = None
 
     def __init__(self, state=None):
         PyMouseEvent.__init__(self)
@@ -33,15 +28,14 @@ class mouse_calibrator(PyMouseEvent):
             self._y_offset = -30
 
         if state == 'calibrate_mouse_actionbar':
-            print('[Calibrating fishing_pole action bar location! Alt-tab, go left-click it && come back here!]')
-            self._fishing_pole_loc = None
-            self._fishing_skill_loc = None
-            self._fishing_bauble_loc = None
+            print('[Go click your fishing_pole on your actionbar! Come back here!]')
+            self._yield_skills = self.yield_actionbar_skills()
+
         elif state == 'calibrate_scanarea':
             print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
             self._sp.capture()
             nemo = self._sp._numpy
-    
+
             # [Windows might need this at 50% in WoW too?]:
             if sys.platform == 'darwin':
                 nemo = self._sp.resize_image(nemo, scale_percent=50)
@@ -61,34 +55,24 @@ class mouse_calibrator(PyMouseEvent):
         else:
             print('[Mouse Listening]')
 
-    def save_actionbar_calibration(self):
+    def yield_actionbar_skills(self):
+        yield "fishing_pole"
+        yield "fishing_skill"
+        yield "fishing_bauble"
+
+    def save_actionbar_coords(self, _action_bar_coords):
+        print(_action_bar_coords)
         # [Load up current configs]:
         config_filename = 'configs/mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
         # [Update config for locations]:
-        configs.update(self._fishing_pole_loc)
-        configs.update(self._fishing_skill_loc)
-        configs.update(self._fishing_bauble_loc)
+        configs.update(_action_bar_coords)
 
         # [Save values back to config file to update values]:
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
-
-    def get_tooltip_control_gray_etc(self, _coords_start, _coords_stop):
-        # [Screenshot for `tooltip_control_gray`]:
-        nemo = self._sp.grab_rect(_coords_start['tooltip_start'], _coords_stop['tooltip_stop'], mod=1, nemo=self.nemo)
-        gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-        imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
-
-        # [Tooltip calibration starts from lower right half of screen]:
-        _coords_start['tooltip_start']['y'] += int(self._sp._height/2)
-        _coords_start['tooltip_start']['x'] += int(self._sp._width/2)
-        _coords_stop['tooltip_stop']['y'] += int(self._sp._height/2)
-        _coords_stop['tooltip_stop']['x'] += int(self._sp._width/2)
-
-        return (_coords_start, _coords_stop)
 
     # [general purpose save]:
     def save_box_coords(self, _coords_start, _coords_stop, config_name):
@@ -113,27 +97,35 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
+    def get_tooltip_control_gray_etc(self, _coords_start, _coords_stop):
+        # [Screenshot for `tooltip_control_gray`]:
+        nemo = self._sp.grab_rect(_coords_start['tooltip_start'], _coords_stop['tooltip_stop'], mod=1, nemo=self.nemo)
+        gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+        imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
+
+        # [Tooltip calibration starts from lower right half of screen]:
+        _coords_start['tooltip_start']['y'] += int(self._sp._height/2)
+        _coords_start['tooltip_start']['x'] += int(self._sp._width/2)
+        _coords_stop['tooltip_stop']['y'] += int(self._sp._height/2)
+        _coords_stop['tooltip_stop']['x'] += int(self._sp._width/2)
+
+        return (_coords_start, _coords_stop)
+
     def click(self, x, y, button, press):
         int_x = int(x)
         int_y = int(y)
 
         # [Code for Mouse Mouse Calibration]:
         if button==1 and press and self._state=='calibrate_mouse_actionbar':
-            if self._fishing_pole_loc == None:
-                self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
-                print(self._fishing_pole_loc)
-                print('[Calibrating fishing_skill action bar location! Alt-tab, go left-click it && come back here!]')
-            elif self._fishing_skill_loc == None:
-                self._fishing_skill_loc = {"fishing_skill" : { "x":int_x, "y":int_y }}
-                print(self._fishing_skill_loc)
-                print('[Calibrating fishing_bauble action bar location! Alt-tab, go left-click it && come back here!]')
-            elif self._fishing_bauble_loc == None:
-                self._fishing_bauble_loc = {"fishing_bauble" : { "x":int_x, "y":int_y }}
-                print(self._fishing_bauble_loc)
-                print('Click one more time for Good Luck!')
-            else:
-                print('[Ending Calibration]')
-                self.save_actionbar_calibration()
+            actionbar_skill = next(self._yield_skills)
+            self.save_actionbar_coords({actionbar_skill : { "x":int_x, "y":int_y }})
+
+            if 'fishing_pole' in actionbar_skill:
+                print('[Go click your fishing_skill on your actionbar! Come back here after!]')
+            elif 'fishing_skill' in actionbar_skill:
+                print('[Go click your fishing_bauble on your actionbar! Come back here after!]')
+            elif 'fishing_bauble' in actionbar_skill:
+                print('[Saving to `configs/mouse_actionbar.json`!]')
                 self.stop()
 
         if button==1 and self._state!='calibrate_mouse_actionbar':
@@ -145,47 +137,12 @@ class mouse_calibrator(PyMouseEvent):
                 config_name = 'tooltip'
 
             if press:
-                self._coords_start[config_name+'_start']['x'] = int_x
-                self._coords_start[config_name+'_start']['y'] = int_y
-                #self._coords_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
+                self._coords_start = {"{0}_start".format(config_name) : { "x":int_x, "y":int_y }}
             else:
-                self._coords_stop[config_name+'_stop']['x'] = int_x
-                self._coords_stop[config_name+'_stop']['y'] = int_y
-                #self._coords_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
+                self._coords_stop = {"{0}_stop".format(config_name) : { "x":int_x, "y":int_y }}
 
-            # [Send coords back over to bobberbot]:
+            # [Save bounds of box]:
             if self._coords_stop is not None:
                 self.save_box_coords(self._coords_start, self._coords_stop, config_name)
                 cv2.destroyAllWindows()
                 self.stop()
-        '''
-        # [Code for Scan Area Calibration]:
-        if button==1 and self._state=='calibrate_scanarea': #self._calibrating_scanarea:
-            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
-
-            if press:
-                self._coords_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
-            else:
-                self._coords_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
-
-            # [Send coords back over to bobberbot]:
-            if self._coords_stop is not None:
-                self.save_box_coords(self._coords_start, self._coords_stop, 'scanarea')
-                cv2.destroyAllWindows()
-                self.stop()
-
-        # [Code for Scan Area Calibration]:
-        if button==1 and self._state=='calibrate_tooltip':
-            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
-
-            if press:
-                self._coords_start = {"tooltip_start" : { "x":int_x, "y":int_y }}
-            else:
-                self._coords_stop = {"tooltip_stop" : { "x":int_x, "y":int_y }}
-
-            # [Send coords back over to bobberbot]:
-            if self._coords_stop is not None:
-                self.save_box_coords(self._coords_start, self._coords_stop, 'tooltip')
-                cv2.destroyAllWindows()
-                self.stop()
-        '''

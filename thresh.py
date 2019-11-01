@@ -423,7 +423,9 @@ class bobber_bot():
 
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
-            _use_calibrate_config = False
+            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+            print('Go `git checkout -- configs/*` or something. :P')
+            sys.exit(1)
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
@@ -456,7 +458,9 @@ class bobber_bot():
             _use_calibrate_config = input('[Calibration config found for mouse_action bar | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
-            _use_calibrate_config = False
+            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+            print('Go `git checkout -- configs/*` or something. :P')
+            sys.exit(1)
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
@@ -482,6 +486,7 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
+# [Collapsed Calibate scanarea/tooltip on mouse side.. can do on thresh side too]:
 # [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
 # [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
 # [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
@@ -499,6 +504,4 @@ if __name__ == '__main__':
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
 
-        #bb.calibrate_mouse_tooltip()
-        #print(bb.check_tooltip())
 print('[fin.]')
