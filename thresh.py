@@ -482,7 +482,6 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [0]: Check `check_login` to make sure MOD is correct in WINDOWS
 # [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
 # [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
 # [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
@@ -499,4 +498,7 @@ if __name__ == '__main__':
         print('[_DEV testing]:')
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
+
+        #bb.calibrate_mouse_tooltip()
+        #print(bb.check_tooltip())
 print('[fin.]')
