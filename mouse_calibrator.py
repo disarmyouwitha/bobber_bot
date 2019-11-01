@@ -19,7 +19,6 @@ class mouse_calibrator(PyMouseEvent):
     _fishing_pole_loc = None
     _fishing_skill_loc = None
     _fishing_bauble_loc = None
-    _calibrating_mouse_mode = False
     ### THESE CAN GO NEXT^
 
     def __init__(self, state=None):
@@ -38,12 +37,11 @@ class mouse_calibrator(PyMouseEvent):
             self._fishing_pole_loc = None
             self._fishing_skill_loc = None
             self._fishing_bauble_loc = None
-            self._calibrating_mouse_mode = True
         elif state == 'calibrate_scanarea':
             print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
             self._sp.capture()
             nemo = self._sp._numpy
-
+    
             # [Windows might need this at 50% in WoW too?]:
             if sys.platform == 'darwin':
                 nemo = self._sp.resize_image(nemo, scale_percent=50)
@@ -120,7 +118,7 @@ class mouse_calibrator(PyMouseEvent):
         int_y = int(y)
 
         # [Code for Mouse Mouse Calibration]:
-        if button==1 and press and self._calibrating_mouse_mode:
+        if button==1 and press and self._state=='calibrate_mouse_actionbar':
             if self._fishing_pole_loc == None:
                 self._fishing_pole_loc = {"fishing_pole" : { "x":int_x, "y":int_y }}
                 print(self._fishing_pole_loc)
@@ -135,10 +133,32 @@ class mouse_calibrator(PyMouseEvent):
                 print('Click one more time for Good Luck!')
             else:
                 print('[Ending Calibration]')
-                self._calibrating_mouse_mode = False
                 self.save_actionbar_calibration()
                 self.stop()
 
+        if button==1 and self._state!='calibrate_mouse_actionbar':
+            print('Woomy!: ({0}, {1})'.format(int_x, int_y))
+
+            if 'scanarea' in self._state:
+                config_name = 'scanarea'
+            elif 'tooltip' in self._state:
+                config_name = 'tooltip'
+
+            if press:
+                self._coords_start[config_name+'_start']['x'] = int_x
+                self._coords_start[config_name+'_start']['y'] = int_y
+                #self._coords_start = {"scanarea_start" : { "x":int_x, "y":int_y }}
+            else:
+                self._coords_stop[config_name+'_stop']['x'] = int_x
+                self._coords_stop[config_name+'_stop']['y'] = int_y
+                #self._coords_stop = {"scanarea_stop" : { "x":int_x, "y":int_y }}
+
+            # [Send coords back over to bobberbot]:
+            if self._coords_stop is not None:
+                self.save_box_coords(self._coords_start, self._coords_stop, config_name)
+                cv2.destroyAllWindows()
+                self.stop()
+        '''
         # [Code for Scan Area Calibration]:
         if button==1 and self._state=='calibrate_scanarea': #self._calibrating_scanarea:
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
@@ -168,3 +188,4 @@ class mouse_calibrator(PyMouseEvent):
                 self.save_box_coords(self._coords_start, self._coords_stop, 'tooltip')
                 cv2.destroyAllWindows()
                 self.stop()
+        '''
