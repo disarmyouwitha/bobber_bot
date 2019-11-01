@@ -2,11 +2,13 @@ import sys
 import cv2
 import json
 import time
+import imageio
 import screen_pixel
 from pymouse import PyMouseEvent
 
 class mouse_calibrator(PyMouseEvent):
     _sp = None
+    _nemo = None
     _click_cnt = 0
     _y_offset = None
     _tooltip_stop = None
@@ -58,9 +60,9 @@ class mouse_calibrator(PyMouseEvent):
             self._tooltip_start = None
             self._calibrating_tooltip = True
             self._sp.capture() #Capture so we can get width/height
-            nemo = self._sp.grab_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1)
+            self.nemo = self._sp.grab_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1, nemo=self._sp._numpy)
 
-            cv2.imshow('Calibrate Tooltip', nemo)
+            cv2.imshow('Calibrate Tooltip', self.nemo)
             cv2.moveWindow('Calibrate Tooltip', 0,0)
         else:
             print('[Mouse Listening]')
@@ -103,13 +105,20 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
+        # [Add _y_offset]:
         self._tooltip_start['tooltip_start']['y'] += self._y_offset
         self._tooltip_stop['tooltip_stop']['y'] += self._y_offset
+
+        # [Screenshot for `tooltip_control_gray`]:
+        nemo = self._sp.grab_rect(self._tooltip_start['tooltip_start'], self._tooltip_stop['tooltip_stop'], mod=1, nemo=self.nemo)
+        gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+        imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
+
+        # [Tooltip calibration starts from lower half, right half]:
         self._tooltip_start['tooltip_start']['y'] += int(self._sp._height/2)
         self._tooltip_start['tooltip_start']['x'] += int(self._sp._width/2)
         self._tooltip_stop['tooltip_stop']['y'] += int(self._sp._height/2)
         self._tooltip_stop['tooltip_stop']['x'] += int(self._sp._width/2)
-        # ^(Tooltip calibration starts from lower half, right half)
 
         # [Update config for locations]:
         configs.update(self._tooltip_start)

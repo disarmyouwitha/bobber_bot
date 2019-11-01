@@ -82,7 +82,7 @@ class screen_pixel(object):
         return nemo_scaled 
 
     # [To facilitate grabbing Scan Area]:
-    def grab_rect(self, json_coords_start, json_coords_stop, mod=2):
+    def grab_rect(self, json_coords_start, json_coords_stop, mod=2, nemo=0):
         _start_x = json_coords_start.get('x')
         _start_y = json_coords_start.get('y')
         start_x = (_start_x*mod)
@@ -93,9 +93,18 @@ class screen_pixel(object):
         stop_x = (_stop_x*mod)
         stop_y = (_stop_y*mod)
 
+        # [Use provided array, or take a capture]:
+        try:
+            if nemo==0:
+                self.capture()
+                _numpy_img = self._numpy
+        except Exception:
+            #print('Caught exception, passing image in')
+            _numpy_img = nemo
+            pass
+
         # [Trim _numpy array to rect]:
-        self.capture()
-        return self._numpy[start_y:stop_y,start_x:stop_x]
+        return _numpy_img[start_y:stop_y,start_x:stop_x]
 
     def draw_rect(self, json_coords_start, json_coords_stop, mod=2):
         _start_x = json_coords_start.get('x')

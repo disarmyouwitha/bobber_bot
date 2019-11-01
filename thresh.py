@@ -84,7 +84,6 @@ class bobber_bot():
     _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
-    _audio_threshold = 2000
     _splash_detected = False
     _fishing_pole_loc = None
     _fishing_pole_key = None
@@ -92,6 +91,12 @@ class bobber_bot():
     _fishing_skill_key = None
     _fishing_bauble_loc = None
     _fishing_bauble_key = None
+
+    # [I've been keeping threshold lower on my windows box because I actually have to listen to it(?)ss]:
+    if sys.platform == 'darwin':
+        _audio_threshold = 2000
+    else:
+        _audio_threshold = 200
 
     # [BobberBot Settings]:
     _use_baubles = False
@@ -126,7 +131,7 @@ class bobber_bot():
         else:
             pyautogui.typewrite(self._fishing_skill_key)
 
-        time.sleep(3) # Wait so that we don't try and find old bobber as it fades (? needed now?)
+        time.sleep(3) # Wait so that we don't try and find old bobber as it fades
         self._bobber_reset = True
         self._bobber_found = False
         self._splash_detected = False
@@ -423,17 +428,15 @@ class bobber_bot():
             self.sp._tooltip_stop = configs['tooltip_stop']
 
         if _use_calibrate_config == False:
-            self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
+            if sys.platform == 'darwin':
+                self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
+            else:
+                self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
 
             # [Check with user to make sure they like the scan area]:
             _calibrate_good = input('[Tooltip Calibration Good? (y/n)]: ')
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
-            if _calibrate_good: 
-                # [Screenshot for `tooltip_control_gray`]:
-                nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
-                gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-                imageio.imwrite('img/tooltip_control_gray.png', gray_nemo)
-            else:
+            if _calibrate_good == False:
                 self.calibrate_mouse_tooltip()
 
     # [Have user calibrate location of items on taskbar]:
@@ -474,6 +477,7 @@ class bobber_bot():
 # [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
 # [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
 # [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
+# ^(check_login() does not work in WINDOWS)
 # ^(Need more general purpose function for calibrating coords for SSIM)
 # [4]: Ability to give commands to bot | Ability to recalibrate during loop
 # [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
@@ -484,5 +488,6 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-
+        #reconnected = bb.auto_reconnect()
+        #print(reconnected)
 print('[fin.]')
