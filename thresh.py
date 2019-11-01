@@ -415,14 +415,16 @@ class bobber_bot():
         if 'scanarea' in config_name:
             self.sp._scanarea_start = configs['scanarea_start']
             self.sp._scanarea_stop = configs['scanarea_stop']
-            self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1)
+            if _use_calibrate_config == False:
+                self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1)
         elif 'tooltip' in config_name:
             self.sp._tooltip_start = configs['tooltip_start']
             self.sp._tooltip_stop = configs['tooltip_stop']
-            if sys.platform == 'darwin':
-                self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
-            else:
-                self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
+            if _use_calibrate_config == False:
+                if sys.platform == 'darwin':
+                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
+                else:
+                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
         elif 'mouse_actionbar' in config_name:
             self._fishing_pole_loc = configs['fishing_pole']
             self._fishing_skill_loc = configs['fishing_skill']
