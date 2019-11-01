@@ -411,14 +411,7 @@ class bobber_bot():
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
-        if _use_calibrate_config == False:
-            # [Check with user to make sure they like the scan area]:
-            _calibrate_good = input('[{0} Calibration Good? (y/n)]: '.format(config_name))
-            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
-            if _calibrate_good == False:
-                self.config_check(config_name)
-
-        # [Set globals, etc]:
+        # [Set globals, draw preview]:
         if 'scanarea' in config_name:
             self.sp._scanarea_start = configs['scanarea_start']
             self.sp._scanarea_stop = configs['scanarea_stop']
@@ -434,6 +427,13 @@ class bobber_bot():
             self._fishing_pole_loc = configs['fishing_pole']
             self._fishing_skill_loc = configs['fishing_skill']
             self._fishing_bauble_loc = configs['fishing_bauble']
+
+        if _use_calibrate_config == False:
+            # [Check with user to make sure they like the scan area]:
+            _calibrate_good = input('[{0} Calibration Good? (y/n)]: '.format(config_name))
+            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
+            if _calibrate_good == False:
+                self.config_check(config_name)
 
     # [Load config file into globals]:
     def load_skills_actionbar(self):
