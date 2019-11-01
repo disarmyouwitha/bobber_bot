@@ -55,7 +55,7 @@ def audio_callback(in_data, frame_count, time_info, status):
         bb.pa.terminate()
 
         # [Die Young && Leave beautiful code]:
-        print('Run time: {0} min'.format((time.time()-bb._bot_start)/60))
+        print('Run time: {0} min'.format(int((time.time()-bb._bot_start)/60)))
         print('Catch count: {0}'.format(bb._catch_cnt))
         print('Miss count:  {0}'.format(bb._miss_cnt))
 
@@ -221,26 +221,24 @@ class bobber_bot():
         print('OooOoOoooOooo')
         return False
 
-    def start(self):
+    def calibration_check(self):
         # [Calibrate Scanarea coords]:
         self.config_check('scanarea')
-        #self.calibrate_mouse_scanarea()
 
         # [Calibrate HSV for bobber]:
         self.sp.calibrate_bobber()
 
         # [Calibrate Tooltip coords]:
         self.config_check('tooltip')
-        #self.calibrate_mouse_tooltip()
 
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
             self.config_check('mouse_actionbar')
-            #self.calibrate_mouse_actionbar()
         else:
             self.load_skills_actionbar()
-            #^(else, load from skills config)
 
+    def start(self):
+        self.calibration_check()
         input('[Enter to start bot!]: (3sec delay)')
         self._timer_start = time.time()
         time.sleep(3)
@@ -268,7 +266,7 @@ class bobber_bot():
                         self._timeout_cnt+=1
                         if self._timeout_cnt >= 10:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
-                            print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                            print('Run time: {0} min'.format(int((time.time()-self._bot_start)/60)))
                             print('Catch count: {0}'.format(self._catch_cnt))
                             print('Miss count:  {0}'.format(self._miss_cnt))
 
@@ -294,7 +292,7 @@ class bobber_bot():
             except pyautogui.FailSafeException:
                 self._bobber_reset=True
 
-                print('Run time: {0} min'.format((time.time()-self._bot_start)/60))
+                print('Run time: {0} min'.format(int((time.time()-self._bot_start)/60)))
                 print('Catch count: {0}'.format(self._catch_cnt))
                 print('Miss count:  {0}'.format(self._miss_cnt))
 
@@ -377,114 +375,6 @@ class bobber_bot():
 
         return 0
 
-    '''
-    # [Have user calibrate location of Scan Area]:
-    def calibrate_mouse_scanarea(self):
-        # [Check for config files]:
-        config_filename = 'configs/scanarea.json'
-        if os.path.isfile(config_filename):
-            # [Load config file for coords to draw_rect]:
-            with open(config_filename) as config_file:
-                configs = json.load(config_file)
-                self.sp._scanarea_start = configs['scanarea_start']
-                self.sp._scanarea_stop = configs['scanarea_stop']
-
-            self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1, pause=False) 
-            _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
-            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
-        else:
-            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
-            print('Go `git checkout -- configs/*` or something. :P')
-            sys.exit(1)
-
-        # [Calibrate mouse _coords for each action bar item used]:
-        if _use_calibrate_config == False:
-            # [Display picture of screen for user to click]:
-            mc = mouse_calibrator.mouse_calibrator('calibrate_scanarea')
-            mc.run()
-
-            # [Load config file for coords to draw_rect]:
-            with open(config_filename) as config_file:
-                configs = json.load(config_file)
-                self.sp._scanarea_start = configs['scanarea_start']
-                self.sp._scanarea_stop = configs['scanarea_stop']
-
-            # [Draw rectangle to confirm]:
-            self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1) 
-
-            # [Check with user to make sure they like the scan area]:
-            _calibrate_good = input('[Scan Area Calibration Good? (y/n)]: ')
-            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
-            if _calibrate_good == False:
-                self.calibrate_mouse_scanarea()
-    '''
-
-    '''
-    # [Have user calibrate location of Tooltip]:
-    def calibrate_mouse_tooltip(self):
-        # [Check for config files]:
-        config_filename = 'configs/tooltip.json'
-        if os.path.isfile('img/tooltip_control_gray.png'):
-            _use_calibrate_config = input('[Calibration config found for Tooltip | Use this?]: ')
-
-            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
-        else:
-            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
-            print('Go `git checkout -- configs/*` or something. :P')
-            sys.exit(1)
-
-        # [Calibrate mouse _coords for each action bar item used]:
-        if _use_calibrate_config == False:
-            mc = mouse_calibrator.mouse_calibrator('calibrate_tooltip')
-            mc.run()
-
-        # [Load config file into globals]:
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-            self.sp._tooltip_start = configs['tooltip_start']
-            self.sp._tooltip_stop = configs['tooltip_stop']
-
-        if _use_calibrate_config == False:
-            if sys.platform == 'darwin':
-                self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
-            else:
-                self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
-
-            # [Check with user to make sure they like the scan area]:
-            _calibrate_good = input('[Tooltip Calibration Good? (y/n)]: ')
-            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
-            if _calibrate_good == False:
-                self.calibrate_mouse_tooltip()
-    '''
-
-    '''
-    # [Have user calibrate location of items on taskbar]:
-    def calibrate_mouse_actionbar(self):
-        # [Check for config files]:
-        config_filename = 'configs/mouse_actionbar.json'
-        if os.path.isfile(config_filename):
-            _use_calibrate_config = input('[Calibration config found for mouse_action bar | Use this?]: ')
-            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
-        else:
-            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
-            print('Go `git checkout -- configs/*` or something. :P')
-            sys.exit(1)
-
-        # [Calibrate mouse _coords for each action bar item used]:
-        if _use_calibrate_config == False:
-            mc = mouse_calibrator.mouse_calibrator('calibrate_mouse_actionbar')
-            mc.run()
-
-        # [Load config file into globals]:
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-            self._fishing_pole_loc = configs['fishing_pole']
-            self._fishing_skill_loc = configs['fishing_skill']
-            self._fishing_bauble_loc = configs['fishing_bauble']
-
-        print('[Mouse Calibration finished~ Domo Arigato!]')
-    '''
-
     # [Check for config files]:
     def config_check(self, config_name):
         config_filename = 'configs/{0}.json'.format(config_name)
@@ -560,7 +450,6 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [Collapsed Calibate scanarea/tooltip on mouse side.. can do on thresh side too]:
 # [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
 # [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
 # [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
