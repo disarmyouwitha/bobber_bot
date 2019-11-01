@@ -100,14 +100,8 @@ class mouse_calibrator(PyMouseEvent):
             configs = json.load(config_file)
 
         # [Add _y_offset]:
-        #_coords_start[config_name+'_start']['y'] += self._y_offset
-        #_coords_stop[config_name+'_stop']['y'] += self._y_offset
-        if 'scanarea' in config_name:
-            _coords_start['scanarea_start']['y'] += self._y_offset
-            _coords_stop['scanarea_stop']['y'] += self._y_offset
-        elif 'tooltip' in config_name:
-            _coords_start['tooltip_start']['y'] += self._y_offset
-            _coords_stop['tooltip_stop']['y'] += self._y_offset
+        _coords_start[config_name+'_start']['y'] += self._y_offset
+        _coords_stop[config_name+'_stop']['y'] += self._y_offset
 
         # [Tooltip specific modifications]:
         if 'tooltip' in config_name:
