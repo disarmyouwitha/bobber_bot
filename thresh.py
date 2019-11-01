@@ -94,7 +94,7 @@ class bobber_bot():
 
     # [I've been keeping threshold lower on my windows box because I actually have to listen to it(?)ss]:
     if sys.platform == 'darwin':
-        _audio_threshold = 1000
+        _audio_threshold = 1400
     else:
         _audio_threshold = 200
 
@@ -223,17 +223,20 @@ class bobber_bot():
 
     def start(self):
         # [Calibrate Scanarea coords]:
-        self.calibrate_mouse_scanarea()
+        self.config_check('scanarea')
+        #self.calibrate_mouse_scanarea()
 
         # [Calibrate HSV for bobber]:
         self.sp.calibrate_bobber()
 
         # [Calibrate Tooltip coords]:
-        self.calibrate_mouse_tooltip()
+        self.config_check('tooltip')
+        #self.calibrate_mouse_tooltip()
 
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
-            self.calibrate_mouse_actionbar()
+            self.config_check('mouse_actionbar')
+            #self.calibrate_mouse_actionbar()
         else:
             self.load_skills_actionbar()
             #^(else, load from skills config)
@@ -374,6 +377,7 @@ class bobber_bot():
 
         return 0
 
+    '''
     # [Have user calibrate location of Scan Area]:
     def calibrate_mouse_scanarea(self):
         # [Check for config files]:
@@ -413,7 +417,9 @@ class bobber_bot():
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
                 self.calibrate_mouse_scanarea()
+    '''
 
+    '''
     # [Have user calibrate location of Tooltip]:
     def calibrate_mouse_tooltip(self):
         # [Check for config files]:
@@ -449,7 +455,9 @@ class bobber_bot():
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
                 self.calibrate_mouse_tooltip()
+    '''
 
+    '''
     # [Have user calibrate location of items on taskbar]:
     def calibrate_mouse_actionbar(self):
         # [Check for config files]:
@@ -475,6 +483,72 @@ class bobber_bot():
             self._fishing_bauble_loc = configs['fishing_bauble']
 
         print('[Mouse Calibration finished~ Domo Arigato!]')
+    '''
+
+    # [Check for config files]:
+    def config_check(self, config_name):
+        config_filename = 'configs/{0}.json'.format(config_name)
+
+        if 'tooltip' in config_name:
+            _config_check = os.path.isfile('img/tooltip_control_gray.png')
+        else:
+            _config_check = os.path.isfile(config_filename)
+        
+        if _config_check:
+            # [Load config file for coords to draw_rect]:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+
+            # [Preview if scanarea]:
+            if 'scanarea' in config_name:
+                self.sp.draw_rect(configs['scanarea_start'], configs['scanarea_stop'], mod=1, pause=False)
+
+            _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
+            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
+
+        else:
+            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+            print('Go `git checkout -- configs/*` or something. :P')
+            sys.exit(1)
+
+
+        # [Use mouse_calibrator to capture _coords]:
+        if _use_calibrate_config == False:
+            mc = mouse_calibrator.mouse_calibrator('calibrate_{0}'.format(config_name))
+            mc.run()
+
+            # [Load config file for coords to draw_rect]:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+
+            # [Set globals for screen_pixel and draw a preview of the area]:
+            if 'scanarea' in config_name:
+                self.sp._scanarea_start = configs['scanarea_start']
+                self.sp._scanarea_stop = configs['scanarea_stop']
+
+                self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1)
+            if 'tooltip' in config_name:
+                self.sp._tooltip_start = configs['tooltip_start']
+                self.sp._tooltip_stop = configs['tooltip_stop']
+
+                if sys.platform == 'darwin':
+                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
+                else:
+                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
+
+            # [Check with user to make sure they like the scan area]:
+            _calibrate_good = input('[{0} Calibration Good? (y/n)]: '.format(config_name))
+            _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
+            if _calibrate_good == False:
+                self.config_check(config_name)
+
+        if 'mouse_actionbar' in config_name:
+            # [Load mouse_mode config file into globals]:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+                self._fishing_pole_loc = configs['fishing_pole']
+                self._fishing_skill_loc = configs['fishing_skill']
+                self._fishing_bauble_loc = configs['fishing_bauble']
 
     # [Load config file into globals]:
     def load_skills_actionbar(self):
