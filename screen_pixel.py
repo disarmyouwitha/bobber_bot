@@ -106,7 +106,7 @@ class screen_pixel(object):
         # [Trim _numpy array to rect]:
         return _numpy_img[start_y:stop_y,start_x:stop_x]
 
-    def draw_rect(self, json_coords_start, json_coords_stop, mod=2):
+    def draw_rect(self, json_coords_start, json_coords_stop, mod=2, pause=True):
         _start_x = json_coords_start.get('x')
         _start_y = json_coords_start.get('y')
         _start_x = (_start_x*mod)
@@ -117,12 +117,14 @@ class screen_pixel(object):
         _stop_x = (_stop_x*mod)
         _stop_y = (_stop_y*mod)
 
-        # [Draw box around Scan Area specified with mouse]:
-        print('Pause. Drawing scan area with mouse:')
-        time.sleep(2)
-
         _diff_x = (_stop_x - _start_x)
         _diff_y = (_stop_y - _start_y)
+
+        if pause:
+            print('Pause. Drawing scan area with mouse:')
+            time.sleep(2)
+
+        # [Draw box coords specified]:
         pyautogui.moveTo(_start_x, _start_y, duration=1)
         pyautogui.moveTo((_start_x+_diff_x),_start_y, duration=1)
         pyautogui.moveTo((_start_x+_diff_x),(_start_y+_diff_y), duration=1)

@@ -379,10 +379,19 @@ class bobber_bot():
         # [Check for config files]:
         config_filename = 'configs/scanarea.json'
         if os.path.isfile(config_filename):
+            # [Load config file for coords to draw_rect]:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+                self.sp._scanarea_start = configs['scanarea_start']
+                self.sp._scanarea_stop = configs['scanarea_stop']
+
+            self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1, pause=False) 
             _use_calibrate_config = input('[Calibration config found for Scan Area | Use this?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
-            _use_calibrate_config = False
+            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+            print('Go `git checkout -- configs/*` or something. :P')
+            sys.exit(1)
 
         # [Calibrate mouse _coords for each action bar item used]:
         if _use_calibrate_config == False:
@@ -390,13 +399,13 @@ class bobber_bot():
             mc = mouse_calibrator.mouse_calibrator('calibrate_scanarea')
             mc.run()
 
-        # [Load config file into globals]:
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-            self.sp._scanarea_start = configs['scanarea_start']
-            self.sp._scanarea_stop = configs['scanarea_stop']
+            # [Load config file for coords to draw_rect]:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+                self.sp._scanarea_start = configs['scanarea_start']
+                self.sp._scanarea_stop = configs['scanarea_stop']
 
-        if _use_calibrate_config == False:
+            # [Draw rectangle to confirm]:
             self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1) 
 
             # [Check with user to make sure they like the scan area]:
