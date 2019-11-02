@@ -225,6 +225,10 @@ class bobber_bot():
                 break
         return _reconnected
 
+    def calibration_check_optional(self):
+        self.config_check('login', required=False)
+        self.config_check('health', required=False)
+
     def calibration_check_required(self):
         # [Calibrate Scanarea coords]:
         self.config_check('scanarea')
@@ -382,10 +386,6 @@ class bobber_bot():
             return _coords
 
         return 0
-
-    def calibration_check_optional(self):
-        self.config_check('login', required=False)
-        self.config_check('health', required=False)
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
