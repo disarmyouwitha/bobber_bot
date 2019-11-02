@@ -457,6 +457,11 @@ class bobber_bot():
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
                 self.config_check(config_name)
+            else:
+                if 'login' in config_name:
+                    passwd = input('Enter password for login (or go save it in `configs/pass.txt` after this!): ')
+                    with open('configs/pass.txt', 'w+') as f:
+                        f.write(passwd)
 
     # [Load config file into globals]:
     def load_skills_actionbar(self):
@@ -483,8 +488,6 @@ if __name__ == '__main__':
     else:
         print('[_DEV testing]:')
         bb.calibration_check_optional()
-        login_clear = bb.check_ssim('login')
-        print(login_clear)
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
 
