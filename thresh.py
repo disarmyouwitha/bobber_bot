@@ -157,29 +157,29 @@ class bobber_bot():
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
-    def check_login(self):
-        #[Capture Login Rect]:
-        print('[Checking for login screen / Checking for disconnect] 2sec..')
+    def check_ssim(self, config_name):
+        print('[Checking for {0} screen] 2sec..'.format(config_name))
         time.sleep(2)
 
-        # [Uses `mod=2` because mouse_pixel is half of screen_pixel]: (?)
-        if sys.platform == 'darwin':
-            nemo = self.sp.grab_rect({"x": 420, "y": 394}, {"x": 1013, "y": 673}, mod=2)
+        if os.path.isfile('img/{0}_control_gray.png'.format(config_name)):
+            with open('configs/{0}.json'.format(config_name)) as config_file:
+                configs = json.load(config_file)
+
+            nemo = self.sp.grab_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=2)
+
+            # [Convert images to grayscale]:
+            gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
+            gray_control = imageio.imread('img/{0}_control_gray.png'.format(config_name))
+            (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
+
+            print("SSIM: {}".format(score))
+            return True if (score > .90) else False
         else:
-            nemo = self.sp.grab_rect({"x": 420, "y": 394}, {"x": 1013, "y": 673}, mod=1) #MOD2?
-
-        # [Convert images to grayscale]:
-        gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-        gray_control = imageio.imread('img/login_control_gray.png')
-
-        (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
-
-        #print("SSIM: {}".format(score))
-        return True if (score > .90) else False
+            return False
 
     # We have determined that we have disconnected.. How to reconnect?
     def reconnect(self):
-        login_clear = self.check_login()
+        login_clear = self.check_ssim('login')
 
         if login_clear:
             if os.path.isfile('configs/pass.txt'):
@@ -379,47 +379,47 @@ class bobber_bot():
         return 0
 
     def calibration_check_optional(self):
-        print('[OPTIONAL CONFIGS]: (Go through config for these or comment out `calibration_check_optional()` to stop seeing this!)')
-        #self.config_check('login', required=False)
-        #self.config_check('character_select', required=False)
+        print('[OPTIONAL CONFIGS]: (Go through calibrations for these or comment out `calibration_check_optional()` to stop seeing this!)')
+        self.config_check('login', required=False)
+        self.config_check('character_select', required=False)
         self.config_check('health', required=False)
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
         config_filename = 'configs/{0}.json'.format(config_name)
 
-        if 'tooltip' in config_name:
-            _config_check = os.path.isfile('img/tooltip_control_gray.png')
-        elif 'login' in config_name:
-            _config_check = os.path.isfile('img/login_control_gray.png')
-        elif 'character_select' in config_name:
-            _config_check = os.path.isfile('img/character_select_control_gray.png')
-        elif 'health' in config_name:
-            _config_check = os.path.isfile('img/health_control_gray.png')
+        if 'tooltip' in config_name or 'login' in config_name or 'character_select' in config_name or 'health' in config_name:
+            _config_check = os.path.isfile('img/{0}_control_gray.png'.format(config_name))
         else:
             _config_check = os.path.isfile(config_filename)
 
-        print(config_name)
-        print(_config_check)
+        #TESTING:
+        if _config_check==False:
+            print(config_name)
+        return 0
 
-        if _config_check:
-            # [Load config file for coords to draw_rect]:
-            with open(config_filename) as config_file:
-                configs = json.load(config_file)
+        if required:
+            if _config_check:
+                # [Load config file for coords to draw_rect]:
+                with open(config_filename) as config_file:
+                    configs = json.load(config_file)
 
-            # [Preview if scanarea]:
-            if 'scanarea' in config_name:
-                self.sp.draw_rect(configs['scanarea_start'], configs['scanarea_stop'], mod=1, pause=False)
+                # [Preview if scanarea]:
+                if 'scanarea' in config_name:
+                    self.sp.draw_rect(configs['scanarea_start'], configs['scanarea_stop'], mod=1, pause=False)
 
-            _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
-            _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
-
-        else:
-            if required:
+                _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
+                _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
+            else:
                 print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
                 print('Go `git checkout -- configs/*` or something. :P')
                 sys.exit(1)
-
+        else:
+            # [Optional configs don't make you confirm use]:
+            if _config_check:
+                _use_calibrate_config = True
+            else:
+                _use_calibrate_config = False
 
         # [Use mouse_calibrator to capture _coords]:
         if _use_calibrate_config == False:
@@ -476,12 +476,13 @@ class bobber_bot():
 # [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = False
+    _DEV = True
     if _DEV==False:
         bb.start()
     else:
         print('[_DEV testing]:')
-        #reconnected = bb.auto_reconnect()
-        #print(reconnected)
+        #bb.calibration_check_optional()
+        reconnected = bb.auto_reconnect()
+        print(reconnected)
 
 print('[fin.]')
