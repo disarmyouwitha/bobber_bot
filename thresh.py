@@ -474,15 +474,14 @@ class bobber_bot():
 
 
 
-# [0]: Write `calibrate_relogin()` to get `login_control_gray` for user
-# ^(check_login() does not work in WINDOWS)
+# [0]: Check auto_reconnect calibration for WINDOWS)
 # [1]: Collapse check_tooltip into check_ssim()
 # [2]: Collapse configs for: health.json | login.json | (tooltip.json)
-# [3]: Ability to give commands to bot from pyautogui.FailSafeException
-# ^(Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
+# [-]: Ability to give commands to bot from pyautogui.FailSafeException
+# ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = True
+    _DEV = False
     if _DEV==False:
         bb.start()
     else:
