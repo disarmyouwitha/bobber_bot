@@ -225,26 +225,6 @@ class bobber_bot():
                 break
         return _reconnected
 
-    def calibration_check_optional(self):
-        self.config_check('login', required=False)
-        self.config_check('health', required=False)
-
-    def calibration_check_required(self):
-        # [Calibrate Scanarea coords]:
-        self.config_check('scanarea')
-
-        # [Calibrate HSV for bobber]:
-        self.sp.calibrate_bobber()
-
-        # [Calibrate Tooltip coords]:
-        self.config_check('tooltip')
-
-        # [If using mouse_mode, calibrate coords on actionbar for skills]:
-        if self._use_mouse_mode:
-            self.config_check('mouse_actionbar')
-        else:
-            self.load_skills_actionbar()
-
     def start(self):
         self.calibration_check_optional()
         self.calibration_check_required()
@@ -386,6 +366,26 @@ class bobber_bot():
             return _coords
 
         return 0
+
+    def calibration_check_optional(self):
+        self.config_check('login', required=False)
+        self.config_check('health', required=False)
+
+    def calibration_check_required(self):
+        # [Calibrate Scanarea coords]:
+        self.config_check('scanarea')
+
+        # [Calibrate HSV for bobber]:
+        self.sp.calibrate_bobber()
+
+        # [Calibrate Tooltip coords]:
+        self.config_check('tooltip')
+
+        # [If using mouse_mode, calibrate coords on actionbar for skills]:
+        if self._use_mouse_mode:
+            self.config_check('mouse_actionbar')
+        else:
+            self.load_skills_actionbar()
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
