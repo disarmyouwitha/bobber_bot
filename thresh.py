@@ -471,14 +471,13 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [-]: Collapse check_tooltip into check_ssim()
-# [0]: Collapse configs for: health.json | login.json | (tooltip.json)
-# [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? **NEEDED??
-# [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
+
+# [0]: Write `calibrate_relogin()` to get `login_control_gray` for user
 # ^(check_login() does not work in WINDOWS)
-# ^(Need more general purpose function for calibrating coords for SSIM)
-# [4]: Ability to give commands to bot | Ability to recalibrate during loop
-# [5]: Give bot chatlog? Chatlog addons? / scan bobberbot channel for commands
+# [1]: Collapse check_tooltip into check_ssim()
+# [2]: Collapse configs for: health.json | login.json | (tooltip.json)
+# [3]: Ability to give commands to bot from pyautogui.FailSafeException
+# ^(Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = True

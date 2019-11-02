@@ -87,7 +87,7 @@ class mouse_calibrator(PyMouseEvent):
         _coords_stop[config_name+'_stop']['y'] += self._y_offset
 
         # [Screenshot for `_control_gray.png`]:
-        if 'tooltip' in config_name or 'health' in config_name or 'login' in config_name: #or 'character_selection' in config_name
+        if 'tooltip' in config_name or 'health' in config_name or 'login' in config_name:
             nemo = self._sp.grab_rect(_coords_start[config_name+'_start'], _coords_stop[config_name+'_stop'], mod=1, nemo=self._nemo)
             gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
             imageio.imwrite('img/{0}_control_gray.png'.format(config_name), gray_nemo)
