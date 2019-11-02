@@ -158,8 +158,9 @@ class bobber_bot():
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
     def check_ssim(self, config_name):
-        print('[Checking for {0} screen] 2sec..'.format(config_name))
-        time.sleep(2)
+        if config_name != 'tooltip':
+            print('[Checking for {0} screen] 2sec..'.format(config_name))
+            time.sleep(2)
 
         if os.path.isfile('img/{0}_control_gray.png'.format(config_name)):
             with open('configs/{0}.json'.format(config_name)) as config_file:
@@ -167,9 +168,14 @@ class bobber_bot():
 
             nemo = self.sp.grab_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=2)
 
+            if 'health' in config_name: #or ...
+                nemo = self.sp.resize_image(nemo, scale_percent=50)
+
             # [Convert images to grayscale]:
             gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
             gray_control = imageio.imread('img/{0}_control_gray.png'.format(config_name))
+            imageio.imwrite('test_{0}_gray.png'.format(config_name), gray_test) ##
+
             (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
             print("SSIM: {}".format(score))
@@ -200,10 +206,10 @@ class bobber_bot():
 
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
-                    if self.is_dead():
-                        return -1
-                    else:
+                    if self.check_ssim('health'):
                         return 1
+                    else:
+                        return -1
         else:
             # Hit ESC to clear dialog / rather than clicking okay:
             pyautogui.press('esc')
@@ -214,14 +220,9 @@ class bobber_bot():
     def auto_reconnect(self):
         for x in range(0,3):
             _reconnected = self.reconnect()
-            if _reconnected==1:
-                print('[Reconnected!!]')
+            if _reconnected==1 or _reconnected==-1:
                 break
         return _reconnected
-
-    def is_dead(self):
-        print('OooOoOoooOooo')
-        return False
 
     def calibration_check_required(self):
         # [Calibrate Scanarea coords]:
@@ -275,12 +276,15 @@ class bobber_bot():
 
                             # [Try to reconenct a few times]:
                             reconnected = self.auto_reconnect()
-                            if reconnected:
-                               print('[Reconnected -- Starting bot back up!] 2sec..')
-                               time.sleep(2)
+                            if reconnected == 1:
+                                print('[Reconnected -- Starting bot back up!] 2sec..')
+                                time.sleep(2)
+                            elif reconnected == -1:
+                                print('[Able to reconnect, but DEAD, exiting] =(')
+                                sys.exit()
                             else:
-                               print('[Not able to reconnect, exiting] =(')
-                               sys.exit()
+                                print('[Not able to reconnect, exiting] =(')
+                                sys.exit()
 
                     # [Cast Pole!]:
                     self.cast_pole()
@@ -379,16 +383,14 @@ class bobber_bot():
         return 0
 
     def calibration_check_optional(self):
-        print('[OPTIONAL CONFIGS]: (Go through calibrations for these or comment out `calibration_check_optional()` to stop seeing this!)')
         self.config_check('login', required=False)
-        self.config_check('character_select', required=False)
         self.config_check('health', required=False)
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
         config_filename = 'configs/{0}.json'.format(config_name)
 
-        if 'tooltip' in config_name or 'login' in config_name or 'character_select' in config_name or 'health' in config_name:
+        if 'tooltip' in config_name or 'login' in config_name or 'health' in config_name:
             _config_check = os.path.isfile('img/{0}_control_gray.png'.format(config_name))
         else:
             _config_check = os.path.isfile(config_filename)
@@ -396,7 +398,6 @@ class bobber_bot():
         #TESTING:
         if _config_check==False:
             print(config_name)
-        return 0
 
         if required:
             if _config_check:
@@ -419,11 +420,12 @@ class bobber_bot():
             if _config_check:
                 _use_calibrate_config = True
             else:
+                print('[OPTIONAL CONFIG]: {0} (Go through calibration for this or comment out in `calibration_check_optional()` to stop seeing this!)'.format(confile_name))
                 _use_calibrate_config = False
 
         # [Use mouse_calibrator to capture _coords]:
         if _use_calibrate_config == False:
-            mc = mouse_calibrator.mouse_calibrator('calibrate_{0}'.format(config_name))
+            mc = mouse_calibrator.mouse_calibrator('{0}'.format(config_name))
             mc.run()
 
         # [Load config file for coords to draw_rect]:
@@ -444,6 +446,9 @@ class bobber_bot():
                     self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
                 else:
                     self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
+        elif 'health' in config_name or 'login' in config_name:
+            if _use_calibrate_config == False:
+                self.sp.draw_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=1)
         elif 'mouse_actionbar' in config_name:
             self._fishing_pole_loc = configs['fishing_pole']
             self._fishing_skill_loc = configs['fishing_skill']
@@ -466,9 +471,9 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [0]: Collapse configs for: health.json | login.json | character_select.json | (tooltip.json)
-# [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
-# [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
+# [-]: Collapse check_tooltip into check_ssim()
+# [0]: Collapse configs for: health.json | login.json | (tooltip.json)
+# [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? **NEEDED??
 # [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
 # ^(check_login() does not work in WINDOWS)
 # ^(Need more general purpose function for calibrating coords for SSIM)
@@ -481,8 +486,8 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        #bb.calibration_check_optional()
-        reconnected = bb.auto_reconnect()
-        print(reconnected)
+        bb.calibration_check_optional()
+        #reconnected = bb.auto_reconnect()
+        #print(reconnected)
 
 print('[fin.]')
