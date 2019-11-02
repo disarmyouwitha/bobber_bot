@@ -99,7 +99,7 @@ class bobber_bot():
         _audio_threshold = 200
 
     # [BobberBot Settings]:
-    _use_baubles = False
+    _use_baubles = 60 # 0
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
 
     def __init__(self):
@@ -118,7 +118,7 @@ class bobber_bot():
 
     def cast_pole(self):
         # [Check to apply bauble]:
-        if self._use_baubles:
+        if self._use_baubles > 0:
             self.bauble_check()
 
         self._timer_elapsed = 0
@@ -149,6 +149,8 @@ class bobber_bot():
             else:
                 pyautogui.typewrite(self._fishing_bauble_key) # fishing bauble on action bar
                 pyautogui.typewrite(self._fishing_pole_key) # fishing pole on action bar
+            self._use_baubles-=1
+            print('Baubles left: {0}'.format(self._use_baubles))
 
             time.sleep(10) # sleep while casting bauble~
             self._bauble_elapsed = 0
@@ -221,7 +223,7 @@ class bobber_bot():
         print('OooOoOoooOooo')
         return False
 
-    def calibration_check(self):
+    def calibration_check_required(self):
         # [Calibrate Scanarea coords]:
         self.config_check('scanarea')
 
@@ -238,7 +240,8 @@ class bobber_bot():
             self.load_skills_actionbar()
 
     def start(self):
-        self.calibration_check()
+        self.calibration_check_optional()
+        self.calibration_check_required()
         input('[Enter to start bot!]: (3sec delay)')
         self._timer_start = time.time()
         time.sleep(3)
@@ -375,15 +378,30 @@ class bobber_bot():
 
         return 0
 
+    def calibration_check_optional(self):
+        print('[OPTIONAL CONFIGS]: (Go through config for these or comment out `calibration_check_optional()` to stop seeing this!)')
+        #self.config_check('login', required=False)
+        #self.config_check('character_select', required=False)
+        self.config_check('health', required=False)
+
     # [Check for config files]:
-    def config_check(self, config_name):
+    def config_check(self, config_name, required=True):
         config_filename = 'configs/{0}.json'.format(config_name)
 
         if 'tooltip' in config_name:
             _config_check = os.path.isfile('img/tooltip_control_gray.png')
+        elif 'login' in config_name:
+            _config_check = os.path.isfile('img/login_control_gray.png')
+        elif 'character_select' in config_name:
+            _config_check = os.path.isfile('img/character_select_control_gray.png')
+        elif 'health' in config_name:
+            _config_check = os.path.isfile('img/health_control_gray.png')
         else:
             _config_check = os.path.isfile(config_filename)
-        
+
+        print(config_name)
+        print(_config_check)
+
         if _config_check:
             # [Load config file for coords to draw_rect]:
             with open(config_filename) as config_file:
@@ -397,9 +415,10 @@ class bobber_bot():
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
 
         else:
-            print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
-            print('Go `git checkout -- configs/*` or something. :P')
-            sys.exit(1)
+            if required:
+                print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+                print('Go `git checkout -- configs/*` or something. :P')
+                sys.exit(1)
 
 
         # [Use mouse_calibrator to capture _coords]:
@@ -447,6 +466,7 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
+# [0]: Collapse configs for: health.json | login.json | character_select.json | (tooltip.json)
 # [1]: Check for death upon login? / Write `calibrate_death_check()` / Can use SSIM on healthbar? 
 # [2]: Write `calibrate_character_select()` / Can use SSIM on `LOGIN` button? 
 # [3]: Write `calibrate_relogin()` to get `login_control_gray` for user
