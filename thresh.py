@@ -168,8 +168,9 @@ class bobber_bot():
 
             nemo = self.sp.grab_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=2)
 
-            if 'health' in config_name: #or ...
+            if 'login' in config_name or 'health' in config_name: #or ...
                 nemo = self.sp.resize_image(nemo, scale_percent=50)
+            # ^(No IF needed, for all of them? Maybe not /w tooltip..)
 
             # [Convert images to grayscale]:
             gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
@@ -395,10 +396,6 @@ class bobber_bot():
         else:
             _config_check = os.path.isfile(config_filename)
 
-        #TESTING:
-        if _config_check==False:
-            print(config_name)
-
         if required:
             if _config_check:
                 # [Load config file for coords to draw_rect]:
@@ -420,8 +417,8 @@ class bobber_bot():
             if _config_check:
                 _use_calibrate_config = True
             else:
-                print('[OPTIONAL CONFIG]: {0} (Go through calibration for this or comment out in `calibration_check_optional()` to stop seeing this!)'.format(confile_name))
-                _use_calibrate_config = False
+                _use_calibrate_config = input('[OPTIONAL CONFIG]: {0} | Would you like to skip?: '.format(config_name))
+                _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
 
         # [Use mouse_calibrator to capture _coords]:
         if _use_calibrate_config == False:
@@ -486,6 +483,8 @@ if __name__ == '__main__':
     else:
         print('[_DEV testing]:')
         bb.calibration_check_optional()
+        login_clear = bb.check_ssim('login')
+        print(login_clear)
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
 
