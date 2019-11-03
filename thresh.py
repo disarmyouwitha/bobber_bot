@@ -409,9 +409,12 @@ class bobber_bot():
                 _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
                 _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
             else:
-                print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
-                print('Go `git checkout -- configs/*` or something. :P')
-                sys.exit(1)
+                if 'tooltip' in config_name:
+                    _use_calibrate_config = False
+                else: 
+                    print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+                    print('Go `git checkout -- configs/*` or something. :P')
+                    sys.exit(1)
         else:
             # [Optional configs don't make you confirm use]:
             if _config_check:

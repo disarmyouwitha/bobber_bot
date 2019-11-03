@@ -34,11 +34,11 @@ class mouse_calibrator(PyMouseEvent):
         elif state == 'scanarea' or state == 'health' or state == 'login':
             print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
             self._sp.capture()
-            nemo = self._sp._numpy
+            self._nemo = self._sp._numpy
 
             # [Windows might need this at 50% in WoW too?]:
             if sys.platform == 'darwin':
-                self._nemo = self._sp.resize_image(nemo, scale_percent=50)
+                self._nemo = self._sp.resize_image(self._nemo, scale_percent=50)
 
             cv2.imshow('Calibrate {0}'.format(state), self._nemo)
             cv2.moveWindow('Calibrate {0}'.format(state), 0,0)
@@ -104,7 +104,7 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
-    def offset_configs(self, _coords_start, _coords_stop):
+    def offset_configs(self, _coords_start, _coords_stop, config_name):
         _coords_start[config_name+'_start']['y'] += int(self._sp._height/2)
         _coords_start[config_name+'_start']['x'] += int(self._sp._width/2)
         _coords_stop[config_name+'_stop']['y'] += int(self._sp._height/2)
