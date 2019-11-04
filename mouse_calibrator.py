@@ -118,11 +118,11 @@ class mouse_calibrator(PyMouseEvent):
             actionbar_skill = next(self._yield_skills)
             self.save_actionbar_coords({actionbar_skill : { "x":int_x, "y":int_y }})
 
-            if 'fishing_pole' in actionbar_skill:
+            if 'fishing_pole_stop' in actionbar_skill:
                 print('[Go click your fishing_skill on your actionbar! Come back here after!]')
-            elif 'fishing_skill' in actionbar_skill:
+            elif 'fishing_skill_stop' in actionbar_skill:
                 print('[Go click your fishing_bauble on your actionbar! Come back here after!]')
-            elif 'fishing_bauble' in actionbar_skill:
+            elif 'fishing_bauble_stop' in actionbar_skill:
                 print('[Saving to `configs/coord_configs.json`!]')
                 self.stop()
 

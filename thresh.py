@@ -505,10 +505,10 @@ class bobber_bot():
 
 
 # [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
-# [-]: Check auto_reconnect calibration for WINDOWS)
-# [-]: Check auto_login after calibrate_login
-# [-]: CHECK auto_reconnect /w 4 ESC (without logging out) to see if it will recover
 # [-]: VERIFY: check_ssim('tooltip') is working and REMOVE check_tooltip()
+# [-]: Check auto_login after calibrate_login
+# [-]: Check auto_reconnect /w 4 ESCAPES (without logging out) to see if it will recover
+# [-]: Check auto_reconnect calibration for WINDOWS)
 # [0]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 bb = bobber_bot()
@@ -518,7 +518,6 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        bb.config_check('mouse_actionbar')
         #bb.calibration_check_optional()
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
