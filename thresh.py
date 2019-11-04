@@ -163,7 +163,8 @@ class bobber_bot():
             time.sleep(2)
 
         if os.path.isfile('img/{0}_control_gray.png'.format(config_name)):
-            with open('configs/{0}.json'.format(config_name)) as config_file:
+            with open('configs/coord_configs.json') as config_file:
+            #with open('configs/{0}.json'.format(config_name)) as config_file:
                 configs = json.load(config_file)
 
             # [Grab rect from settings _coords for SSIM check]:
@@ -176,7 +177,7 @@ class bobber_bot():
             # [Convert images to grayscale]:
             gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
             gray_control = imageio.imread('img/{0}_control_gray.png'.format(config_name))
-            imageio.imwrite('test_{0}_gray.png'.format(config_name), gray_test) ##
+            imageio.imwrite('test_{0}_gray.png'.format(config_name), gray_test) #remove?#
 
             (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
@@ -210,7 +211,12 @@ class bobber_bot():
 
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
-                    if os.path.isfile('configs/health.json'):
+
+                    with open(config_filename) as config_file:
+                        configs = json.load(config_file)
+
+                    if configs['health_stop']['x'] != 0 and configs['health_stop']['y'] != 0:
+                    #if os.path.isfile('configs/health.json'):
                         if self.check_ssim('health'):
                             return 1
                         else:
@@ -399,18 +405,31 @@ class bobber_bot():
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
-        config_filename = 'configs/{0}.json'.format(config_name)
+        config_filename = 'configs/coord_configs.json'
+        #config_filename = 'configs/{0}.json'.format(config_name)
 
         if 'tooltip' in config_name or 'login' in config_name or 'health' in config_name:
-            _config_check = os.path.isfile('img/{0}_control_gray.png'.format(config_name))
+            _config_set = os.path.isfile('img/{0}_control_gray.png'.format(config_name))
         else:
-            _config_check = os.path.isfile(config_filename)
+            # [Check if Config exists for config_name]:
+            with open(config_filename) as config_file:
+                configs = json.load(config_file)
+
+                _config_set = True
+                if config_name == 'mouse_actionbar':
+                    if configs['fishing_pole_stop']['x'] == 0 and configs['fishing_pole_stop']['y'] == 0:
+                        _config_set = False
+                else:
+                    if configs[config_name+'_stop']['x'] == 0 and configs[config_name+'_stop']['y'] == 0:
+                        _config_set = False
+
+            #_config_set = os.path.isfile(config_filename)
 
         if required:
-            if _config_check:
+            if _config_set:
                 # [Load config file for coords to draw_rect]:
-                with open(config_filename) as config_file:
-                    configs = json.load(config_file)
+                #with open(config_filename) as config_file:
+                #    configs = json.load(config_file)
 
                 # [Preview if scanarea]:
                 if 'scanarea' in config_name:
@@ -419,15 +438,18 @@ class bobber_bot():
                 _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
                 _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
             else:
+                print('No config set for {0}; Lets configure..'.format(config_name))
+                '''
                 if 'tooltip' in config_name:
                     _use_calibrate_config = False
-                else: 
-                    print('What happened to your config file?? Unfortunately, due to bad design.. config file is required.')
+                else:
+                    print('What happened to your config file?? ')
                     print('Go `git checkout -- configs/*` or something. :P')
                     sys.exit(1)
+                '''
         else:
             # [Optional configs don't make you confirm use]:
-            if _config_check:
+            if _config_set:
                 _use_calibrate_config = True
             else:
                 _use_calibrate_config = input('[OPTIONAL CONFIG]: {0} | Would you like to skip?: '.format(config_name))
@@ -460,9 +482,9 @@ class bobber_bot():
             if _use_calibrate_config == False:
                 self.sp.draw_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=1)
         elif 'mouse_actionbar' in config_name:
-            self._fishing_pole_loc = configs['fishing_pole']
-            self._fishing_skill_loc = configs['fishing_skill']
-            self._fishing_bauble_loc = configs['fishing_bauble']
+            self._fishing_pole_loc = configs['fishing_pole_stop']
+            self._fishing_skill_loc = configs['fishing_skill_stop']
+            self._fishing_bauble_loc = configs['fishing_bauble_stop']
 
         if _use_calibrate_config == False:
             # [Check with user to make sure they like the scan area]:
@@ -491,15 +513,15 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
+
+# [0]: Collapse configs for: health | login | scanarea | tooltip | mouse_actionbar
+# [1]: Ability to give commands to bot from pyautogui.FailSafeException
+# ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 # [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
 # [-]: Check auto_reconnect calibration for WINDOWS)
 # [-]: Check auto_login after calibrate_login
 # [-]: CHECK auto_reconnect /w 4 ESC (without logging out) to see if it will recover
 # [-]: VERIFY: check_ssim('tooltip') is working and REMOVE check_tooltip()
-# [0]: Collapse configs for: health.json | login.json | (tooltip.json)
-# [1]: Ability to give commands to bot from pyautogui.FailSafeException
-# ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
-# [?]: TWILIO: text/email to get bot status/fish count?
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
@@ -507,7 +529,8 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        bb.calibration_check_optional()
+        bb.config_check('mouse_actionbar')
+        #bb.calibration_check_optional()
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
 

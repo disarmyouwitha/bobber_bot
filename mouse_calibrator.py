@@ -62,9 +62,10 @@ class mouse_calibrator(PyMouseEvent):
         yield "fishing_bauble"
 
     def save_actionbar_coords(self, _action_bar_coords):
-        print(_action_bar_coords)
         # [Load up current configs]:
-        config_filename = 'configs/mouse_actionbar.json'
+        print(_action_bar_coords)
+        config_filename = 'configs/coord_configs.json'
+        #config_filename = 'configs/mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -78,7 +79,8 @@ class mouse_calibrator(PyMouseEvent):
     # [general purpose save]:
     def save_box_coords(self, _coords_start, _coords_stop, config_name):
         # [Load up current configs]:
-        config_filename = 'configs/{0}.json'.format(config_name)
+        config_filename = 'configs/coord_configs.json'
+        #config_filename = 'configs/{0}.json'.format(config_name)
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -126,7 +128,8 @@ class mouse_calibrator(PyMouseEvent):
             elif 'fishing_skill' in actionbar_skill:
                 print('[Go click your fishing_bauble on your actionbar! Come back here after!]')
             elif 'fishing_bauble' in actionbar_skill:
-                print('[Saving to `configs/mouse_actionbar.json`!]')
+                print('[Saving to `configs/coord_configs.json`!]')
+                #print('[Saving to `configs/mouse_actionbar.json`!]')
                 self.stop()
 
         if button==1 and self._state!='mouse_actionbar':
