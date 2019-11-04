@@ -138,13 +138,13 @@ class screen_pixel(object):
     # [Display calibrate images to confirm they look good]:
     def calibrate_bobber(self):
         # [Check for config files]:
-        config_filename = 'configs/bobber.json'
+        config_filename = 'configs/bobber_HSV.json'
         if os.path.isfile(config_filename):
             _use_calibrate_config = input('[Use calibration from config for bobber?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
             print('Config file missing for bobber..')
-            print('Please `git checkout -- configs/bobber.json` to fix this.')
+            print('Please `git checkout -- configs/bobber_HSV.json` to fix this.')
             sys.exit(1)
 
         # [Set HSV mask from configs]:

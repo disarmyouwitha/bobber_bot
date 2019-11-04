@@ -521,9 +521,7 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-
-# [0]: Collapse configs for: health | login | scanarea | tooltip | mouse_actionbar
-# [1]: Ability to give commands to bot from pyautogui.FailSafeException
+# [0]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 # [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
 # [-]: Check auto_reconnect calibration for WINDOWS)

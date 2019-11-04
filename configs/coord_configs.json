@@ -1,0 +1,12 @@
+{
+    "login_start": {"x": 0, "y": 0}, 
+    "login_stop": {"x": 0, "y": 0}, 
+    "health_start": {"x": 0, "y": 0}, 
+    "health_stop": {"x": 0, "y": 0}, 
+    "fishing_pole_stop": {"x": 0, "y": 0}, 
+    "fishing_skill_stop": {"x": 0, "y": 0}, 
+    "fishing_bauble_stop": {"x": 0, "y": 0}, 
+    "scanarea_start": {"x": 0, "y": 0}, 
+    "scanarea_stop": {"x": 0, "y": 0}, 
+    "tooltip_start": {"x": 0, "y": 0}, 
+    "tooltip_stop": {"x": 0, "y": 0}}
