@@ -121,7 +121,7 @@ class screen_pixel(object):
         _diff_y = (_stop_y - _start_y)
 
         if pause:
-            print('Pause. Drawing scan area with mouse:')
+            print('Pause. Drawing area with mouse:')
             time.sleep(2)
 
         # [Draw box coords specified]:
@@ -143,7 +143,9 @@ class screen_pixel(object):
             _use_calibrate_config = input('[Use calibration from config for bobber?]: ')
             _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
         else:
-            _use_calibrate_config = False
+            print('Config file missing for bobber..')
+            print('Please `git checkout -- configs/bobber.json` to fix this.')
+            sys.exit(1)
 
         # [Set HSV mask from configs]:
         if _use_calibrate_config:

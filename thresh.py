@@ -415,13 +415,16 @@ class bobber_bot():
             with open(config_filename) as config_file:
                 configs = json.load(config_file)
 
-                _config_set = True
-                if config_name == 'mouse_actionbar':
-                    if configs['fishing_pole_stop']['x'] == 0 and configs['fishing_pole_stop']['y'] == 0:
-                        _config_set = False
-                else:
-                    if configs[config_name+'_stop']['x'] == 0 and configs[config_name+'_stop']['y'] == 0:
-                        _config_set = False
+            # What if there is no row? Does it error? Can I insert instead of update?
+            #try:
+            _config_set = True
+            if config_name == 'mouse_actionbar':
+                if configs['fishing_pole_stop']['x'] == 0 and configs['fishing_pole_stop']['y'] == 0:
+                    _config_set = False
+            else:
+                if configs[config_name+'_stop']['x'] == 0 and configs[config_name+'_stop']['y'] == 0:
+                    _config_set = False
+            #except:
 
             #_config_set = os.path.isfile(config_filename)
 
@@ -438,7 +441,9 @@ class bobber_bot():
                 _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
                 _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
             else:
-                print('No config set for {0}; Lets configure..'.format(config_name))
+                _use_calibrate_config = False
+                input('[No config set for {0} | Press [enter] to configure]: 3sec'.format(config_name))
+                time.sleep(3)
                 '''
                 if 'tooltip' in config_name:
                     _use_calibrate_config = False
@@ -491,6 +496,8 @@ class bobber_bot():
             _calibrate_good = input('[{0} Calibration Good? (y/n)]: '.format(config_name))
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
+                if 'login' in config_name or 'health' in config_name or 'tooltip' in config_name:
+                    os.remove('img/{0}_control_gray.png'.format(config_name))
                 self.config_check(config_name)
             else:
                 if 'login' in config_name:
@@ -498,10 +505,11 @@ class bobber_bot():
                     with open('configs/pass.txt', 'w+') as f:
                         f.write(passwd)
 
-                    # [Auto]:
-                    print('[Attempting to login now]: 2sec')
-                    time.sleep(2)
-                    self.reconnect()
+                    # [Attempt to auto reconnect]:
+                    print('[Attempting to login now -- alt-tab to WoW!]: 3sec')
+                    time.sleep(3)
+                    _reconnected = self.reconnect()
+                    print('Reconnected?: {0}'.format(_reconnected))
 
     # [Load config file into globals]:
     def load_skills_actionbar(self):

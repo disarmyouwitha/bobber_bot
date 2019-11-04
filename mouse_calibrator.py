@@ -7,6 +7,7 @@ import imageio
 import screen_pixel
 from pymouse import PyMouseEvent
 
+# [1]: mouse_calibrator: configs.update() -- What if there is no row? Does it error? Can I insert instead of update?
 class mouse_calibrator(PyMouseEvent):
     _sp = None
     _nemo = 0
@@ -32,7 +33,7 @@ class mouse_calibrator(PyMouseEvent):
             self._yield_skills = self.yield_actionbar_skills()
 
         elif state == 'scanarea' or state == 'health' or state == 'login':
-            print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
+            print('[Calibrating {0}: Click at the top-left of the area, && drag to lower-right and release click.]'.format(state))
             self._sp.capture()
             self._nemo = self._sp._numpy
 
@@ -43,8 +44,6 @@ class mouse_calibrator(PyMouseEvent):
             cv2.imshow('Calibrate {0}'.format(state), self._nemo)
             cv2.moveWindow('Calibrate {0}'.format(state), 0,0)
         elif state == 'tooltip':
-            input('[Enter to calibrate Tooltip]: 3sec')
-            time.sleep(3)
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
 
             self._sp.capture() #Capture so we can get width/height, pass in the numpy array:
