@@ -205,7 +205,7 @@ class screen_pixel(object):
             font = cv2.FONT_HERSHEY_SIMPLEX
 
             # [Alert user calibration image is ready]:
-            playsound.playsound('audio/sms_alert.mp3')
+            playsound.playsound('sms_alert.mp3')
 
             # [Keep calibration window open until ESC is pressed]:
             while True:

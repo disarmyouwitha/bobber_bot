@@ -162,9 +162,8 @@ class bobber_bot():
             print('[Checking for {0} screen] 2sec..'.format(config_name))
             time.sleep(2)
 
-        if os.path.isfile('img/{0}_control_gray.png'.format(config_name)):
+        if os.path.isfile('configs/{0}_control_gray.png'.format(config_name)):
             with open('configs/coord_configs.json') as config_file:
-            #with open('configs/{0}.json'.format(config_name)) as config_file:
                 configs = json.load(config_file)
 
             # [Grab rect from settings _coords for SSIM check]:
@@ -176,7 +175,7 @@ class bobber_bot():
 
             # [Convert images to grayscale]:
             gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-            gray_control = imageio.imread('img/{0}_control_gray.png'.format(config_name))
+            gray_control = imageio.imread('configs/{0}_control_gray.png'.format(config_name))
             imageio.imwrite('test_{0}_gray.png'.format(config_name), gray_test) #remove?#
 
             (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
@@ -184,7 +183,7 @@ class bobber_bot():
             print("SSIM: {}".format(score))
             return True if (score > .90) else False
         else:
-            print('Missing image from calibration: `img/{0}_control_gray.png`'.format(config_name))
+            print('Missing image from calibration: `configs/{0}_control_gray.png`'.format(config_name))
             sys.exit(1)
 
     # We have determined that we have disconnected.. How to reconnect?
@@ -216,7 +215,6 @@ class bobber_bot():
                         configs = json.load(config_file)
 
                     if configs['health_stop']['x'] != 0 and configs['health_stop']['y'] != 0:
-                    #if os.path.isfile('configs/health.json'):
                         if self.check_ssim('health'):
                             return 1
                         else:
@@ -249,7 +247,7 @@ class bobber_bot():
         self._bot_start = time.time()
 
         # [Play sound to alert start of bot]:
-        playsound.playsound('audio/sms_alert.mp3')
+        playsound.playsound('sms_alert.mp3')
 
         self._audio_stream.start_stream()
         while self._audio_stream.is_active():
@@ -361,7 +359,7 @@ class bobber_bot():
 
         # [Convert images to grayscale]:
         gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-        gray_control = imageio.imread('img/tooltip_control_gray.png')
+        gray_control = imageio.imread('configs/tooltip_control_gray.png')
         imageio.imwrite('tooltip_test_gray.png', gray_test) #
 
         (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
@@ -406,10 +404,9 @@ class bobber_bot():
     # [Check for config files]:
     def config_check(self, config_name, required=True):
         config_filename = 'configs/coord_configs.json'
-        #config_filename = 'configs/{0}.json'.format(config_name)
 
         if 'tooltip' in config_name or 'login' in config_name or 'health' in config_name:
-            _config_set = os.path.isfile('img/{0}_control_gray.png'.format(config_name))
+            _config_set = os.path.isfile('configs/{0}_control_gray.png'.format(config_name))
         else:
             # [Check if Config exists for config_name]:
             with open(config_filename) as config_file:
@@ -426,14 +423,8 @@ class bobber_bot():
                     _config_set = False
             #except:
 
-            #_config_set = os.path.isfile(config_filename)
-
         if required:
             if _config_set:
-                # [Load config file for coords to draw_rect]:
-                #with open(config_filename) as config_file:
-                #    configs = json.load(config_file)
-
                 # [Preview if scanarea]:
                 if 'scanarea' in config_name:
                     self.sp.draw_rect(configs['scanarea_start'], configs['scanarea_stop'], mod=1, pause=False)
@@ -444,14 +435,6 @@ class bobber_bot():
                 _use_calibrate_config = False
                 input('[No config set for {0} | Press [enter] to configure]: 3sec'.format(config_name))
                 time.sleep(3)
-                '''
-                if 'tooltip' in config_name:
-                    _use_calibrate_config = False
-                else:
-                    print('What happened to your config file?? ')
-                    print('Go `git checkout -- configs/*` or something. :P')
-                    sys.exit(1)
-                '''
         else:
             # [Optional configs don't make you confirm use]:
             if _config_set:
@@ -497,7 +480,7 @@ class bobber_bot():
             _calibrate_good = True if _calibrate_good[0].lower() == 'y' else False
             if _calibrate_good == False:
                 if 'login' in config_name or 'health' in config_name or 'tooltip' in config_name:
-                    os.remove('img/{0}_control_gray.png'.format(config_name))
+                    os.remove('configs/{0}_control_gray.png'.format(config_name))
                 self.config_check(config_name)
             else:
                 if 'login' in config_name:
@@ -521,13 +504,13 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [0]: Ability to give commands to bot from pyautogui.FailSafeException
-# ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 # [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
 # [-]: Check auto_reconnect calibration for WINDOWS)
 # [-]: Check auto_login after calibrate_login
 # [-]: CHECK auto_reconnect /w 4 ESC (without logging out) to see if it will recover
 # [-]: VERIFY: check_ssim('tooltip') is working and REMOVE check_tooltip()
+# [0]: Ability to give commands to bot from pyautogui.FailSafeException
+# ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False

@@ -7,7 +7,6 @@ import imageio
 import screen_pixel
 from pymouse import PyMouseEvent
 
-# [1]: mouse_calibrator: configs.update() -- What if there is no row? Does it error? Can I insert instead of update?
 class mouse_calibrator(PyMouseEvent):
     _sp = None
     _nemo = 0
@@ -62,9 +61,7 @@ class mouse_calibrator(PyMouseEvent):
 
     def save_actionbar_coords(self, _action_bar_coords):
         # [Load up current configs]:
-        print(_action_bar_coords)
         config_filename = 'configs/coord_configs.json'
-        #config_filename = 'configs/mouse_actionbar.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -79,7 +76,6 @@ class mouse_calibrator(PyMouseEvent):
     def save_box_coords(self, _coords_start, _coords_stop, config_name):
         # [Load up current configs]:
         config_filename = 'configs/coord_configs.json'
-        #config_filename = 'configs/{0}.json'.format(config_name)
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -91,7 +87,7 @@ class mouse_calibrator(PyMouseEvent):
         if 'tooltip' in config_name or 'health' in config_name or 'login' in config_name:
             nemo = self._sp.grab_rect(_coords_start[config_name+'_start'], _coords_stop[config_name+'_stop'], mod=1, nemo=self._nemo)
             gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-            imageio.imwrite('img/{0}_control_gray.png'.format(config_name), gray_nemo)
+            imageio.imwrite('configs/{0}_control_gray.png'.format(config_name), gray_nemo)
 
         # [Tooltip calibration starts from lower right half of screen]:
         if 'tooltip' in config_name:
@@ -128,7 +124,6 @@ class mouse_calibrator(PyMouseEvent):
                 print('[Go click your fishing_bauble on your actionbar! Come back here after!]')
             elif 'fishing_bauble' in actionbar_skill:
                 print('[Saving to `configs/coord_configs.json`!]')
-                #print('[Saving to `configs/mouse_actionbar.json`!]')
                 self.stop()
 
         if button==1 and self._state!='mouse_actionbar':
