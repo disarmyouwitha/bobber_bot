@@ -9,4 +9,5 @@
     "scanarea_start": {"x": 0, "y": 0}, 
     "scanarea_stop": {"x": 0, "y": 0}, 
     "tooltip_start": {"x": 0, "y": 0}, 
-    "tooltip_stop": {"x": 0, "y": 0}}
+    "tooltip_stop": {"x": 0, "y": 0}
+}
