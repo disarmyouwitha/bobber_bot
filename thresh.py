@@ -205,14 +205,18 @@ class bobber_bot():
 
                     # Delay(15s) for login / Hit Enter to login as character:
                     time.sleep(15)
+                    print('[Waiting 15 sec, will hit enter to login as last character!]')
                     pyautogui.press('enter')
 
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
-                    if self.check_ssim('health'):
-                        return 1
+                    if os.path.isfile('configs/health.json'):
+                        if self.check_ssim('health'):
+                            return 1
+                        else:
+                            return -1
                     else:
-                        return -1
+                        return 1 # Not sure if alive, but lets continue anyways. xD
         else:
             # Hit ESC to clear dialog / rather than clicking okay:
             pyautogui.press('esc')
@@ -468,9 +472,14 @@ class bobber_bot():
                 self.config_check(config_name)
             else:
                 if 'login' in config_name:
-                    passwd = input('Enter password for login (or go save it in `configs/pass.txt` after this!): ')
+                    passwd = input('Enter password for login (or go save it in `configs/pass.txt`!): ')
                     with open('configs/pass.txt', 'w+') as f:
                         f.write(passwd)
+
+                    # [Auto]:
+                    print('[Attempting to login now]: 2sec')
+                    time.sleep(2)
+                    self.reconnect()
 
     # [Load config file into globals]:
     def load_skills_actionbar(self):
@@ -484,6 +493,7 @@ class bobber_bot():
 
 # [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
 # [-]: Check auto_reconnect calibration for WINDOWS)
+# [-]: Check auto_login after calibrate_login
 # [-]: CHECK auto_reconnect /w 4 ESC (without logging out) to see if it will recover
 # [-]: VERIFY: check_ssim('tooltip') is working and REMOVE check_tooltip()
 # [0]: Collapse configs for: health.json | login.json | (tooltip.json)
