@@ -166,11 +166,12 @@ class bobber_bot():
             with open('configs/{0}.json'.format(config_name)) as config_file:
                 configs = json.load(config_file)
 
-            nemo = self.sp.grab_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=2)
-
-            if 'login' in config_name or 'health' in config_name: #or ...
+            # [Grab rect from settings _coords for SSIM check]:
+            if config_name != 'tooltip':
+                nemo = self.sp.grab_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=2)
                 nemo = self.sp.resize_image(nemo, scale_percent=50)
-            # ^(No IF needed, for all of them? Maybe not /w tooltip..)
+            else: # tooltip:
+                nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
 
             # [Convert images to grayscale]:
             gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
@@ -182,7 +183,8 @@ class bobber_bot():
             print("SSIM: {}".format(score))
             return True if (score > .90) else False
         else:
-            return False
+            print('Missing image from calibration: `img/{0}_control_gray.png`'.format(config_name))
+            sys.exit(1)
 
     # We have determined that we have disconnected.. How to reconnect?
     def reconnect(self):
@@ -217,9 +219,10 @@ class bobber_bot():
 
         return 0
 
-    # [Try to clear disconnect messages and reconnect 3 times]:
+    # [Try to clear disconnect messages and reconnect]:
+    # [Try to reconnect an even number of times, so that it will auto-recover if you did not actually D/C]:
     def auto_reconnect(self):
-        for x in range(0,3):
+        for x in range(0,4): 
             _reconnected = self.reconnect()
             if _reconnected==1 or _reconnected==-1:
                 break
@@ -342,6 +345,7 @@ class bobber_bot():
                 break
         return 0
 
+    '''
     def check_tooltip(self):
         nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
 
@@ -354,6 +358,7 @@ class bobber_bot():
 
         #print("SSIM: {}".format(score))
         return True if (score > .90) else False
+    '''
 
     # [Move mouse to _coords /capture/ check for tooltip]:
     def _check_bobber_loc(self, _coords):
@@ -362,7 +367,8 @@ class bobber_bot():
         _coords = ((top+self.sp._scanarea_start.get('y')), (left+self.sp._scanarea_start.get('x')))
         pyautogui.moveTo(_coords[1], _coords[0], duration=0)
 
-        if self.check_tooltip():
+        #if self.check_tooltip():
+        if self.check_ssim('tooltip'):
             return _coords
 
         return 0
@@ -477,11 +483,13 @@ class bobber_bot():
 
 
 # [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
-# [0]: Check auto_reconnect calibration for WINDOWS)
-# [1]: Collapse check_tooltip into check_ssim()
-# [2]: Collapse configs for: health.json | login.json | (tooltip.json)
-# [-]: Ability to give commands to bot from pyautogui.FailSafeException
+# [-]: Check auto_reconnect calibration for WINDOWS)
+# [-]: CHECK auto_reconnect /w 4 ESC (without logging out) to see if it will recover
+# [-]: VERIFY: check_ssim('tooltip') is working and REMOVE check_tooltip()
+# [0]: Collapse configs for: health.json | login.json | (tooltip.json)
+# [1]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
+# [?]: TWILIO: text/email to get bot status/fish count?
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
