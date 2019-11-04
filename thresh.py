@@ -412,8 +412,6 @@ class bobber_bot():
             with open(config_filename) as config_file:
                 configs = json.load(config_file)
 
-            # What if there is no row? Does it error? Can I insert instead of update?
-            #try:
             _config_set = True
             if config_name == 'mouse_actionbar':
                 if configs['fishing_pole_stop']['x'] == 0 and configs['fishing_pole_stop']['y'] == 0:
@@ -421,7 +419,6 @@ class bobber_bot():
             else:
                 if configs[config_name+'_stop']['x'] == 0 and configs[config_name+'_stop']['y'] == 0:
                     _config_set = False
-            #except:
 
         if required:
             if _config_set:

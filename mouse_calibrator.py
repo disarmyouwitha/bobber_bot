@@ -55,9 +55,9 @@ class mouse_calibrator(PyMouseEvent):
             sys.exit(1)
 
     def yield_actionbar_skills(self):
-        yield "fishing_pole"
-        yield "fishing_skill"
-        yield "fishing_bauble"
+        yield "fishing_pole_stop"
+        yield "fishing_skill_stop"
+        yield "fishing_bauble_stop"
 
     def save_actionbar_coords(self, _action_bar_coords):
         # [Load up current configs]:
