@@ -180,7 +180,7 @@ class bobber_bot():
 
             (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
-            print("SSIM: {}".format(score))
+            #print("SSIM: {}".format(score))
             return True if (score > thresh) else False
         else:
             print('Missing image from calibration: `configs/{0}_control_gray.png`'.format(config_name))
@@ -355,21 +355,6 @@ class bobber_bot():
                 break
         return 0
 
-    '''
-    def check_tooltip(self):
-        nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
-
-        # [Convert images to grayscale]:
-        gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-        gray_control = imageio.imread('configs/tooltip_control_gray.png')
-        imageio.imwrite('tooltip_test_gray.png', gray_test) #
-
-        (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
-
-        #print("SSIM: {}".format(score))
-        return True if (score > .90) else False
-    '''
-
     # [Move mouse to _coords /capture/ check for tooltip]:
     def _check_bobber_loc(self, _coords):
         (top, left) = _coords
@@ -377,7 +362,6 @@ class bobber_bot():
         _coords = ((top+self.sp._scanarea_start.get('y')), (left+self.sp._scanarea_start.get('x')))
         pyautogui.moveTo(_coords[1], _coords[0], duration=0)
 
-        #if self.check_tooltip():
         if self.check_ssim('tooltip'):
             return _coords
 
@@ -503,8 +487,7 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [-]: PUSH CHANGES FROM WINDOWS/MAC LAPTOPS INTO DEV / GIT CONFLICT (?) / MERGE TO MASTER
-# [-]: VERIFY: check_ssim('tooltip') is working and REMOVE check_tooltip()
+# [-]: MERGE CHANGES FROM WINDOWS LAPTOP INTO DEV
 # [-]: Check auto_login after calibrate_login
 # [-]: Check auto_reconnect /w 4 ESCAPES (without logging out) to see if it will recover
 # [-]: Check auto_reconnect calibration for WINDOWS)
