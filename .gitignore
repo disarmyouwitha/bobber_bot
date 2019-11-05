@@ -1,6 +1,9 @@
-img/tooltip_control_gray.png
-img/login_control_gray.png
-__pycache__/
-configs/*
-.DS_Store
 *.png
+.DS_Store
+__pycache__/
+configs/pass.txt
+configs/coord_configs.json
+configs/skills_actionbar.json
+configs/login_control_gray.png
+configs/heath_control_gray.png
+configs/tooltip_control_gray.png

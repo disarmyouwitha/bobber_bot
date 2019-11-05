@@ -32,19 +32,17 @@ class mouse_calibrator(PyMouseEvent):
             self._yield_skills = self.yield_actionbar_skills()
 
         elif state == 'scanarea' or state == 'health' or state == 'login':
-            print('[Calibrating Scan Area: Click at the top-left of scan area, && drag to lower-right and release click.]')
+            print('[Calibrating {0}: Click at the top-left of the area, && drag to lower-right and release click.]'.format(state))
             self._sp.capture()
-            nemo = self._sp._numpy
+            self._nemo = self._sp._numpy
 
             # [Windows might need this at 50% in WoW too?]:
             if sys.platform == 'darwin':
-                self._nemo = self._sp.resize_image(nemo, scale_percent=50)
+                self._nemo = self._sp.resize_image(self._nemo, scale_percent=50)
 
             cv2.imshow('Calibrate {0}'.format(state), self._nemo)
             cv2.moveWindow('Calibrate {0}'.format(state), 0,0)
         elif state == 'tooltip':
-            input('[Enter to calibrate Tooltip]: 3sec')
-            time.sleep(3)
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
 
             self._sp.capture() #Capture so we can get width/height, pass in the numpy array:
@@ -57,14 +55,13 @@ class mouse_calibrator(PyMouseEvent):
             sys.exit(1)
 
     def yield_actionbar_skills(self):
-        yield "fishing_pole"
-        yield "fishing_skill"
-        yield "fishing_bauble"
+        yield "fishing_pole_stop"
+        yield "fishing_skill_stop"
+        yield "fishing_bauble_stop"
 
     def save_actionbar_coords(self, _action_bar_coords):
-        print(_action_bar_coords)
         # [Load up current configs]:
-        config_filename = 'configs/mouse_actionbar.json'
+        config_filename = 'configs/coord_configs.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -78,7 +75,7 @@ class mouse_calibrator(PyMouseEvent):
     # [general purpose save]:
     def save_box_coords(self, _coords_start, _coords_stop, config_name):
         # [Load up current configs]:
-        config_filename = 'configs/{0}.json'.format(config_name)
+        config_filename = 'configs/coord_configs.json'
         with open(config_filename) as config_file:
             configs = json.load(config_file)
 
@@ -90,7 +87,7 @@ class mouse_calibrator(PyMouseEvent):
         if 'tooltip' in config_name or 'health' in config_name or 'login' in config_name:
             nemo = self._sp.grab_rect(_coords_start[config_name+'_start'], _coords_stop[config_name+'_stop'], mod=1, nemo=self._nemo)
             gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
-            imageio.imwrite('img/{0}_control_gray.png'.format(config_name), gray_nemo)
+            imageio.imwrite('configs/{0}_control_gray.png'.format(config_name), gray_nemo)
 
         # [Tooltip calibration starts from lower right half of screen]:
         if 'tooltip' in config_name:
@@ -121,12 +118,12 @@ class mouse_calibrator(PyMouseEvent):
             actionbar_skill = next(self._yield_skills)
             self.save_actionbar_coords({actionbar_skill : { "x":int_x, "y":int_y }})
 
-            if 'fishing_pole' in actionbar_skill:
+            if 'fishing_pole_stop' in actionbar_skill:
                 print('[Go click your fishing_skill on your actionbar! Come back here after!]')
-            elif 'fishing_skill' in actionbar_skill:
+            elif 'fishing_skill_stop' in actionbar_skill:
                 print('[Go click your fishing_bauble on your actionbar! Come back here after!]')
-            elif 'fishing_bauble' in actionbar_skill:
-                print('[Saving to `configs/mouse_actionbar.json`!]')
+            elif 'fishing_bauble_stop' in actionbar_skill:
+                print('[Saving to `configs/coord_configs.json`!]')
                 self.stop()
 
         if button==1 and self._state!='mouse_actionbar':
