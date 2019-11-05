@@ -23,7 +23,7 @@ class mouse_calibrator(PyMouseEvent):
 
         # [Trying to account for differences in OSX/Windows]:
         if sys.platform == 'darwin':
-            self._y_offset = -80
+            self._y_offset = -80 #-75 ???
         else:
             self._y_offset = -30
 
@@ -104,7 +104,7 @@ class mouse_calibrator(PyMouseEvent):
         with open(config_filename, 'w') as fp:
             json.dump(configs, fp)
 
-    def offset_configs(self, _coords_start, _coords_stop):
+    def offset_configs(self, _coords_start, _coords_stop, config_name):
         _coords_start[config_name+'_start']['y'] += int(self._sp._height/2)
         _coords_start[config_name+'_start']['x'] += int(self._sp._width/2)
         _coords_stop[config_name+'_stop']['y'] += int(self._sp._height/2)

@@ -99,7 +99,7 @@ class bobber_bot():
         _audio_threshold = 200
 
     # [BobberBot Settings]:
-    _use_baubles = 60 # 0
+    _use_baubles = 0 # 60
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
 
     def __init__(self):
@@ -157,7 +157,7 @@ class bobber_bot():
             self._bauble_start = time.time()
         self._bauble_elapsed = (time.time() - self._bauble_start)
 
-    def check_ssim(self, config_name):
+    def check_ssim(self, config_name, thresh=.90):
         if config_name != 'tooltip':
             print('[Checking for {0} screen] 2sec..'.format(config_name))
             time.sleep(2)
@@ -180,7 +180,7 @@ class bobber_bot():
             (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
             print("SSIM: {}".format(score))
-            return True if (score > .90) else False
+            return True if (score > thresh) else False
         else:
             return False
 
@@ -207,7 +207,7 @@ class bobber_bot():
 
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
-                    if self.check_ssim('health'):
+                    if self.check_ssim('health', .8):
                         return 1
                     else:
                         return -1
@@ -222,6 +222,8 @@ class bobber_bot():
         for x in range(0,3):
             _reconnected = self.reconnect()
             if _reconnected==1 or _reconnected==-1:
+                #self._miss_cnt = 0
+                self._timeout_cnt = 0
                 break
         return _reconnected
 
@@ -473,10 +475,10 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-
 # [0]: Check auto_reconnect calibration for WINDOWS)
 # [1]: Collapse check_tooltip into check_ssim()
 # [2]: Collapse configs for: health.json | login.json | (tooltip.json)
+# [-]: mouse_calibrator: self._y_offset = -80 #-75 ???
 # [-]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
 bb = bobber_bot()
