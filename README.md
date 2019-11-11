@@ -9,6 +9,10 @@ One thing that might throw things into upheaval is.. if your `Render Scale` is n
 
 The other tricky part is setting up the sound.. `audio_callback()` is using the speaker's output to detect the sound of the splash -- This takes some setup with Soundflower on OSX, or by creating a Sound Mixer on windows.. I've included the steps below to help set that up!
 
+# [I've tested this A LOT]: xD
+![menethil_harbor_fish](https://github.com/disarmyouwitha/bobber_bot/blob/master/logs/menethil_harbor_fish.png)
+![lake_mennar_fish](https://github.com/disarmyouwitha/bobber_bot/blob/master/logs/lake_mennar_fish.png)
+![wailing_caverns_fish](https://github.com/disarmyouwitha/bobber_bot/blob/master/logs/wailing_caverns_fish.png)
 
 # [AT THE MOMENT]:
 > The bot will start listening when started. This is the main loop -- when a SPLASH is detected, it will try to catch/recast 
