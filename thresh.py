@@ -211,6 +211,7 @@ class bobber_bot():
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
 
+                    config_filename = 'configs/coord_configs.json'
                     with open(config_filename) as config_file:
                         configs = json.load(config_file)
 
