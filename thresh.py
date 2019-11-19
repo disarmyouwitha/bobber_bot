@@ -490,7 +490,7 @@ class bobber_bot():
 
 
 # [0]: Add `_use_baubles`, `_use_mouse_mode`, etc to config file.
-# [1]: Check to see if mod1/mod2 is because of _RETINA, NOT render scale 50% -- if so.. add code, remove warning from README
+# [1]: Check to see if render scale 50% matters -- if so.. is it because of (_RETINA = stage._sp._check_screen())? if so.. add code && remove warning from README
 # [-]: Check auto_reconnect /w 4 ESCAPES (without logging out) to see if it will recover
 # [0]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
