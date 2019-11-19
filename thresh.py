@@ -488,12 +488,15 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-# [-]: MERGE CHANGES FROM WINDOWS LAPTOP INTO DEV
-# [-]: Check auto_login after calibrate_login
+
+# [0]: Add `_use_baubles`, `_use_mouse_mode`, etc to config file.
+# [1]: Check to see if mod1/mod2 is because of _RETINA, NOT render scale 50% -- if so.. add code, remove warning from README
 # [-]: Check auto_reconnect /w 4 ESCAPES (without logging out) to see if it will recover
-# [-]: Check auto_reconnect calibration for WINDOWS)
 # [0]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
+# ^ (Ability to turn on/off _use_mouse_mode, _use_baubles, etc)
+# [0]: Reimplement parts of code using pynput.mouse to allow bot to click to non-active windows.. Also more immediate EMERGENCY_MOUSE_PANIC hook
+# ^ (let bot alt-tab?.. Reimplement parts of code using pynput.keyboard)
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
