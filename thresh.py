@@ -77,11 +77,13 @@ class bobber_bot():
     _fishing = True
     _timeout_cnt = 0
     _bot_start = None
+    _delay_elapsed = 0
+    _delay_start = None
     _timer_start = None
     _timer_elapsed = 30
     _audio_stream = None
     _bauble_start = None
-    _bauble_elapsed = 660
+    _bauble_elapsed = 666
     _bobber_reset = False
     _bobber_found = False
     _splash_detected = False
@@ -99,7 +101,8 @@ class bobber_bot():
         _audio_threshold = 200
 
     # [BobberBot Settings]:
-    _use_baubles = 0 # 60
+    _use_baubles = 80 #0
+    _bauble_time = 600 #(10min) #300 #(5min)
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
 
     def __init__(self):
@@ -140,7 +143,7 @@ class bobber_bot():
     def bauble_check(self):
         if self._splash_detected:
             time.sleep(2) # If we caught a fish, a small delay before trying to apply bauble to make sure we aren't interrupted
-        if self._bauble_elapsed >= 630: # 10min (and 30secs)
+        if self._bauble_elapsed >= self._bauble_time: # 10min (and 30secs)
             if self._use_mouse_mode:
                 # [Click Fishing bauble]:
                 pyautogui.click(x=self._fishing_bauble_loc.get('x'), y=self._fishing_bauble_loc.get('y'), button='left', clicks=1)
@@ -211,8 +214,12 @@ class bobber_bot():
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
 
+<<<<<<< Updated upstream
                     config_filename = 'configs/coord_configs.json'
                     with open(config_filename) as config_file:
+=======
+                    with open('configs/coord_configs.json') as config_file:
+>>>>>>> Stashed changes
                         configs = json.load(config_file)
 
                     if configs['health_stop']['x'] != 0 and configs['health_stop']['y'] != 0:
@@ -228,6 +235,19 @@ class bobber_bot():
 
         return 0
 
+    # [Can re-write as thread]:
+    # [Can try to call itself if not reconnected && not dead?]:
+    def delay_start(self, ms_delay=3600):
+        self._delay_start = time.time()
+        while self._delay_elapsed < ms_delay:
+            self._delay_elapsed = (time.time() - self._delay_start)
+            print('[sleep]: (1min)')
+            time.sleep(60) # sleep 1min
+
+        # [Try to reconnect]:
+        self.auto_reconnect()
+        self.start(skip_setup=True)
+
     # [Try to clear disconnect messages and reconnect]:
     # [Try to reconnect an even number of times, so that it will auto-recover if you did not actually D/C]:
     def auto_reconnect(self):
@@ -239,9 +259,11 @@ class bobber_bot():
                 break
         return _reconnected
 
-    def start(self):
-        self.calibration_check_optional()
-        self.calibration_check_required()
+    def start(self, skip_setup=False):
+        if skip_setup != False:
+            self.calibration_check_optional()
+            self.calibration_check_required()
+
         input('[Enter to start bot!]: (3sec delay)')
         self._timer_start = time.time()
         time.sleep(3)
@@ -267,7 +289,7 @@ class bobber_bot():
                     elif self._splash_detected == False and self._timer_start is not None:
                         self._miss_cnt+=1
                         self._timeout_cnt+=1
-                        if self._timeout_cnt >= 10:
+                        if self._timeout_cnt >= 20:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
                             print('Run time: {0} min'.format(int((time.time()-self._bot_start)/60)))
                             print('Catch count: {0}'.format(self._catch_cnt))
@@ -499,13 +521,11 @@ class bobber_bot():
 # ^ (let bot alt-tab?.. Reimplement parts of code using pynput.keyboard)
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = False
+    _DEV = True
     if _DEV==False:
         bb.start()
     else:
         print('[_DEV testing]:')
-        #bb.calibration_check_optional()
-        #reconnected = bb.auto_reconnect()
-        #print(reconnected)
+        bb.delay_start(120)
 
 print('[fin.]')

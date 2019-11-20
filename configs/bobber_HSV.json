@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 {
     "bobber_lower_hsv": {"hue": 0, "saturation": 100, "value": 0}, 
     "bobber_upper_hsv": {"hue": 21, "saturation": 255, "value": 255}
 }
+=======
+{"bobber_lower_hsv": {"hue": 0, "saturation": 0, "value": 0}, "bobber_upper_hsv": {"hue": 21, "saturation": 255, "value": 255}}
+>>>>>>> Stashed changes
