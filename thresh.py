@@ -214,12 +214,7 @@ class bobber_bot():
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
 
-<<<<<<< Updated upstream
-                    config_filename = 'configs/coord_configs.json'
-                    with open(config_filename) as config_file:
-=======
                     with open('configs/coord_configs.json') as config_file:
->>>>>>> Stashed changes
                         configs = json.load(config_file)
 
                     if configs['health_stop']['x'] != 0 and configs['health_stop']['y'] != 0:
