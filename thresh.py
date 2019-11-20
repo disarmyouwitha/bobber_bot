@@ -526,6 +526,6 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        bb.delay_start(120)
+        bb.delay_start()
 
 print('[fin.]')
