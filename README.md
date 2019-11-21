@@ -17,7 +17,7 @@ The one tricky part is setting up the sound.. `audio_callback()` is using the sp
 
 > The bot will track the bobber by using the HSV threshold set during calibration.. this usually only takes a few gueses.
 
-> It verifies that it has found the bobber by checking the location of the `Fishing Bobber` tooltip when the bobber is moused-over.
+> It verifies that it has found the bobber by checking the location of the `Fishing Bobber Tooltip` when the bobber is moused-over.
 
 > *The bot will cast `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`*
 
