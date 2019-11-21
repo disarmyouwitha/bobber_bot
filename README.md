@@ -19,13 +19,19 @@ The one tricky part is setting up the sound.. `audio_callback()` is using the sp
 
 > It verifies that it has found the bobber by checking the location of the `Fishing Bobber Tooltip` when the bobber is moused-over.
 
-> *The bot will cast `fishing pole on "7"` when it starts, then use the `fishing skill on "8"`*
+> *If a number of baubles is given for _use_baubles=#, the bot will use `fishing baubles on "9"` on `fishing pole on "7"` when it starts, and every 10min until it thinks you are out of baubles.*
 
-> ^(Optionally, you can enable `_use_baubles=True` to cast baubles every 10min: `Baubles on "9"` )
+> *The bot will then use the `fishing skill on "8"` to cast the pole, and start tracking the bobber.*
+
+> *Once the bobber (tooltip) is detected, the bot will wait until it "hears" the splash (or until the 30sec timer since pole was cast expires) and it will recast/try again.*
+
+> *If the bot has "missed" 20 times in a row (timer has expired after 30sec) the bot thinks that it has disconnected, and will try to auto-reconnect*
+
+> ^(Optionally, if you configure `login` it will have you SSIM your login box, with no password, so that it knows what a clear login screen looks like. The bot will ask you for your password, which is stored in `configs/pass.txt`, for attempting to relogin if disconnected.)
+
+> ^(Optionally, if you configure `health` it will have you SSIM your (full) health bar, so that it knows what your health looks like full. It uses this to detect if you are dead on relogin.)
 
 > ^(Optionally, you can enable `_use_mouse_mode=True` to only use the mouse for fishing actions and it will walk you through calibration -- allowing you to type to your guild, etc, if you are a chatter-bug like me =3)
-
-> ^(Optionally, if you create a `pass.txt` under the configs directory, the bot will try to log you in with this password when it believes that it's been disconnected) ((This works on my client, will have to test for others))
 
 
 # [Setting up audio_callback for OSX]:
