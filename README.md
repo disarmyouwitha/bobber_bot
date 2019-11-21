@@ -5,9 +5,7 @@ This bot is basically finished now! I achieved pretty solid tracking once HSV th
 (The script will step you through configuration each time it runs -- you want only the bobber/parts of the bobber to be selected in white)
 I've been bringing in bag fulls of fish each night and just kicking back making improvements. =]
 
-One thing that might throw things into upheaval is.. if your `Render Scale` is not set to 50% -- This script has all been developed / tested on my macbook, which uses 2880x1800 @ 50% Render Scale. (This is important because certain functions calculating mouse position are using mod=2, etc that would need to be changed if you are not using 50% render scale)
-
-The other tricky part is setting up the sound.. `audio_callback()` is using the speaker's output to detect the sound of the splash -- This takes some setup with Soundflower on OSX, or by creating a Sound Mixer on windows.. I've included the steps below to help set that up!
+The one tricky part is setting up the sound.. `audio_callback()` is using the speaker's output to detect the sound of the splash -- This takes some setup with Soundflower on OSX, or by creating a Sound Mixer on windows.. I've included the steps below to help set that up!
 
 # [I've tested this A LOT]: xD
 ![menethil_harbor_fish](https://github.com/disarmyouwitha/bobber_bot/blob/master/logs/menethil_harbor_fish.png)
