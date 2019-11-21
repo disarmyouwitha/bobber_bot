@@ -1,5 +1,5 @@
 # [bobber_bot]:
-WoW Classic fishing bot.. for funzies.
+WoW (Classic) fishing bot.. for funzies. *Works in Retail too!
 
 This bot is basically finished now! I achieved pretty solid tracking once HSV threshold of the bobber / tooltip is configured~
 (The script will step you through configuration each time it runs -- you want only the bobber/parts of the bobber to be selected in white)
