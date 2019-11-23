@@ -43,6 +43,7 @@ class mouse_calibrator(PyMouseEvent):
             cv2.imshow('Calibrate {0}'.format(state), self._nemo)
             cv2.moveWindow('Calibrate {0}'.format(state), 0,0)
         elif state == 'tooltip':
+            input('[Enter to calibrate tooltip -- Go mouse over your bobber!]: (3sec delay)')
             print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
 
             self._sp.capture() #Capture so we can get width/height, pass in the numpy array:

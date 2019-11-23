@@ -232,16 +232,17 @@ class bobber_bot():
 
     # [Can re-write as thread]:
     # [Can try to call itself if not reconnected && not dead?]:
-    def delay_start(self, ms_delay=3600):
+    def delay_start(self, sec_delay=3600):
+        print('[DELAY START: {0}min]'.format(int(sec_delay/60)))
         self._delay_start = time.time()
-        while self._delay_elapsed < ms_delay:
+        while self._delay_elapsed < sec_delay:
             self._delay_elapsed = (time.time() - self._delay_start)
-            print('[sleep]: (1min)')
+            print('[Delay Elapsed]: {0} (sleep 1min)'.format(int(self._delay_elapsed/60)))
             time.sleep(60) # sleep 1min
 
         # [Try to reconnect]:
         self.auto_reconnect()
-        self.start(skip_setup=True)
+        self.start(setup=False)
 
     # [Try to clear disconnect messages and reconnect]:
     # [Try to reconnect an even number of times, so that it will auto-recover if you did not actually D/C]:
@@ -254,14 +255,17 @@ class bobber_bot():
                 break
         return _reconnected
 
-    def start(self, skip_setup=False):
-        if skip_setup != False:
+    def start(self, setup=True):
+        self.load_class_variables(load_all=True)
+        self.load_skills_actionbar()
+
+        if setup:
             self.calibration_check_optional()
             self.calibration_check_required()
 
-        input('[Enter to start bot!]: (3sec delay)')
-        self._timer_start = time.time()
-        time.sleep(3)
+            input('[Enter to start bot!]: (3sec delay)')
+            self._timer_start = time.time()
+            time.sleep(3)
 
         print('[BobberBot Started]')
         self._bot_start = time.time()
@@ -402,8 +406,6 @@ class bobber_bot():
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
             self.config_check('mouse_actionbar')
-        else:
-            self.load_skills_actionbar()
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
@@ -449,19 +451,14 @@ class bobber_bot():
             mc = mouse_calibrator.mouse_calibrator('{0}'.format(config_name))
             mc.run()
 
-        # [Load config file for coords to draw_rect]:
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
+        # [Set Globals]:
+        self.load_class_variables(config_name=config_name)
 
-        # [Set globals, draw preview]:
+        # [Draw preview]:
         if 'scanarea' in config_name:
-            self.sp._scanarea_start = configs['scanarea_start']
-            self.sp._scanarea_stop = configs['scanarea_stop']
             if _use_calibrate_config == False:
                 self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1)
         elif 'tooltip' in config_name:
-            self.sp._tooltip_start = configs['tooltip_start']
-            self.sp._tooltip_stop = configs['tooltip_stop']
             if _use_calibrate_config == False:
                 if sys.platform == 'darwin':
                     self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
@@ -470,10 +467,6 @@ class bobber_bot():
         elif 'health' in config_name or 'login' in config_name:
             if _use_calibrate_config == False:
                 self.sp.draw_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=1)
-        elif 'mouse_actionbar' in config_name:
-            self._fishing_pole_loc = configs['fishing_pole_stop']
-            self._fishing_skill_loc = configs['fishing_skill_stop']
-            self._fishing_bauble_loc = configs['fishing_bauble_stop']
 
         if _use_calibrate_config == False:
             # [Check with user to make sure they like the scan area]:
@@ -494,6 +487,23 @@ class bobber_bot():
                     time.sleep(3)
                     _reconnected = self.reconnect()
                     print('Reconnected?: {0}'.format(_reconnected))
+
+    # [Load class variables with config file]:
+    def load_class_variables(self, config_name=None, load_all=False):
+        config_filename = 'configs/coord_configs.json'
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
+
+        if load_all or 'scanarea' in config_name:
+            self.sp._scanarea_start = configs['scanarea_start']
+            self.sp._scanarea_stop = configs['scanarea_stop']
+        if load_all or 'tooltip' in config_name:
+            self.sp._tooltip_start = configs['tooltip_start']
+            self.sp._tooltip_stop = configs['tooltip_stop']
+        if load_all or 'mouse_actionbar' in config_name:
+            self._fishing_pole_loc = configs['fishing_pole_stop']
+            self._fishing_skill_loc = configs['fishing_skill_stop']
+            self._fishing_bauble_loc = configs['fishing_bauble_stop']
 
     # [Load config file into globals]:
     def load_skills_actionbar(self):
@@ -516,11 +526,12 @@ class bobber_bot():
 # ^ (let bot alt-tab?.. Reimplement parts of code using pynput.keyboard)
 bb = bobber_bot()
 if __name__ == '__main__':
-    _DEV = True
+    _DEV = False
     if _DEV==False:
         bb.start()
     else:
         print('[_DEV testing]:')
-        bb.delay_start()
+        print('[Woomy! Server Maint~ Time to go play some Splatoon]')
+        bb.delay_start(3600) # 1hr:3600|2hr:7200
 
 print('[fin.]')
