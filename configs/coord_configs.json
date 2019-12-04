@@ -1,1 +1,13 @@
-{"login_start": {"x": 552, "y": 374}, "login_stop": {"x": 883, "y": 701}, "health_start": {"x": 549, "y": 754}, "health_stop": {"x": 807, "y": 800}, "scanarea_start": {"x": 0, "y": 211}, "scanarea_stop": {"x": 1345, "y": 726}, "tooltip_start": {"x": 2595, "y": 1443}, "tooltip_stop": {"x": 2851, "y": 1516}, "fishing_pole_stop": {"x": 0, "y": 0}, "fishing_skill_stop": {"x": 0, "y": 0}, "fishing_bauble_stop": {"x": 0, "y": 0}}
+{
+    "login_start": {"x": 0, "y": 0}, 
+    "login_stop": {"x": 0, "y": 0}, 
+    "health_start": {"x": 0, "y": 0}, 
+    "health_stop": {"x": 0, "y": 0}, 
+    "scanarea_start": {"x": 0, "y": 0}, 
+    "scanarea_stop": {"x": 0, "y": 0}, 
+    "tooltip_start": {"x": 0, "y": 0}, 
+    "tooltip_stop": {"x": 0, "y": 0},
+    "fishing_pole_stop": {"x": 0, "y": 0}, 
+    "fishing_skill_stop": {"x": 0, "y": 0}, 
+    "fishing_bauble_stop": {"x": 0, "y": 0}
+}

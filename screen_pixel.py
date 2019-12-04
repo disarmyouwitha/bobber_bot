@@ -74,17 +74,6 @@ class screen_pixel(object):
             self._numpy = _numpy_rgb
             #imageio.imwrite('screen_mss.png', self._numpy)
 
-    def _check_screen(self):
-        with mss.mss() as sct:
-            _num_mon = len(sct.monitors)
-
-        _RETINA = False
-        if sys.platform == 'darwin':
-            if _num_mon <= 2: #0:All,1:First,2:NOT RETINA
-                _RETINA = True
-
-        return _RETINA
-
     def resize_image(self, nemo, scale_percent=50):
         width = int(nemo.shape[1] * scale_percent / 100)
         height = int(nemo.shape[0] * scale_percent / 100)

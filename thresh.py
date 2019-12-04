@@ -77,13 +77,11 @@ class bobber_bot():
     _fishing = True
     _timeout_cnt = 0
     _bot_start = None
-    _delay_elapsed = 0
-    _delay_start = None
     _timer_start = None
     _timer_elapsed = 30
     _audio_stream = None
     _bauble_start = None
-    _bauble_elapsed = 666
+    _bauble_elapsed = 660
     _bobber_reset = False
     _bobber_found = False
     _splash_detected = False
@@ -101,8 +99,7 @@ class bobber_bot():
         _audio_threshold = 200
 
     # [BobberBot Settings]:
-    _use_baubles = 80 #0
-    _bauble_time = 600 #(10min) #300 #(5min)
+    _use_baubles = 0 # 60
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
 
     def __init__(self):
@@ -143,7 +140,7 @@ class bobber_bot():
     def bauble_check(self):
         if self._splash_detected:
             time.sleep(2) # If we caught a fish, a small delay before trying to apply bauble to make sure we aren't interrupted
-        if self._bauble_elapsed >= self._bauble_time: # 10min (and 30secs)
+        if self._bauble_elapsed >= 630: # 10min (and 30secs)
             if self._use_mouse_mode:
                 # [Click Fishing bauble]:
                 pyautogui.click(x=self._fishing_bauble_loc.get('x'), y=self._fishing_bauble_loc.get('y'), button='left', clicks=1)
@@ -214,7 +211,8 @@ class bobber_bot():
                     # [Check if bot is dead / go ahead and exit xD]:
                     time.sleep(15)
 
-                    with open('configs/coord_configs.json') as config_file:
+                    config_filename = 'configs/coord_configs.json'
+                    with open(config_filename) as config_file:
                         configs = json.load(config_file)
 
                     if configs['health_stop']['x'] != 0 and configs['health_stop']['y'] != 0:
@@ -230,20 +228,6 @@ class bobber_bot():
 
         return 0
 
-    # [Can re-write as thread]:
-    # [Can try to call itself if not reconnected && not dead?]:
-    def delay_start(self, sec_delay=3600):
-        print('[DELAY START: {0}min]'.format(int(sec_delay/60)))
-        self._delay_start = time.time()
-        while self._delay_elapsed < sec_delay:
-            self._delay_elapsed = (time.time() - self._delay_start)
-            print('[Delay Elapsed]: {0} (sleep 1min)'.format(int(self._delay_elapsed/60)))
-            time.sleep(60) # sleep 1min
-
-        # [Try to reconnect]:
-        self.auto_reconnect()
-        self.start(setup=False)
-
     # [Try to clear disconnect messages and reconnect]:
     # [Try to reconnect an even number of times, so that it will auto-recover if you did not actually D/C]:
     def auto_reconnect(self):
@@ -255,17 +239,12 @@ class bobber_bot():
                 break
         return _reconnected
 
-    def start(self, setup=True):
-        self.load_class_variables(load_all=True)
-        self.load_skills_actionbar()
-
-        if setup:
-            self.calibration_check_optional()
-            self.calibration_check_required()
-
-            input('[Enter to start bot!]: (3sec delay)')
-            self._timer_start = time.time()
-            time.sleep(3)
+    def start(self):
+        self.calibration_check_optional()
+        self.calibration_check_required()
+        input('[Enter to start bot!]: (3sec delay)')
+        self._timer_start = time.time()
+        time.sleep(3)
 
         print('[BobberBot Started]')
         self._bot_start = time.time()
@@ -288,7 +267,7 @@ class bobber_bot():
                     elif self._splash_detected == False and self._timer_start is not None:
                         self._miss_cnt+=1
                         self._timeout_cnt+=1
-                        if self._timeout_cnt >= 20:
+                        if self._timeout_cnt >= 10:
                             print('[WoW crashed? Miss Count: {0}]'.format(self._timeout_cnt))
                             print('Run time: {0} min'.format(int((time.time()-self._bot_start)/60)))
                             print('Catch count: {0}'.format(self._catch_cnt))
@@ -406,6 +385,8 @@ class bobber_bot():
         # [If using mouse_mode, calibrate coords on actionbar for skills]:
         if self._use_mouse_mode:
             self.config_check('mouse_actionbar')
+        else:
+            self.load_skills_actionbar()
 
     # [Check for config files]:
     def config_check(self, config_name, required=True):
@@ -451,14 +432,19 @@ class bobber_bot():
             mc = mouse_calibrator.mouse_calibrator('{0}'.format(config_name))
             mc.run()
 
-        # [Set Globals]:
-        self.load_class_variables(config_name=config_name)
+        # [Load config file for coords to draw_rect]:
+        with open(config_filename) as config_file:
+            configs = json.load(config_file)
 
-        # [Draw preview]:
+        # [Set globals, draw preview]:
         if 'scanarea' in config_name:
+            self.sp._scanarea_start = configs['scanarea_start']
+            self.sp._scanarea_stop = configs['scanarea_stop']
             if _use_calibrate_config == False:
                 self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1)
         elif 'tooltip' in config_name:
+            self.sp._tooltip_start = configs['tooltip_start']
+            self.sp._tooltip_stop = configs['tooltip_stop']
             if _use_calibrate_config == False:
                 if sys.platform == 'darwin':
                     self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
@@ -467,6 +453,10 @@ class bobber_bot():
         elif 'health' in config_name or 'login' in config_name:
             if _use_calibrate_config == False:
                 self.sp.draw_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=1)
+        elif 'mouse_actionbar' in config_name:
+            self._fishing_pole_loc = configs['fishing_pole_stop']
+            self._fishing_skill_loc = configs['fishing_skill_stop']
+            self._fishing_bauble_loc = configs['fishing_bauble_stop']
 
         if _use_calibrate_config == False:
             # [Check with user to make sure they like the scan area]:
@@ -488,23 +478,6 @@ class bobber_bot():
                     _reconnected = self.reconnect()
                     print('Reconnected?: {0}'.format(_reconnected))
 
-    # [Load class variables with config file]:
-    def load_class_variables(self, config_name=None, load_all=False):
-        config_filename = 'configs/coord_configs.json'
-        with open(config_filename) as config_file:
-            configs = json.load(config_file)
-
-        if load_all or 'scanarea' in config_name:
-            self.sp._scanarea_start = configs['scanarea_start']
-            self.sp._scanarea_stop = configs['scanarea_stop']
-        if load_all or 'tooltip' in config_name:
-            self.sp._tooltip_start = configs['tooltip_start']
-            self.sp._tooltip_stop = configs['tooltip_stop']
-        if load_all or 'mouse_actionbar' in config_name:
-            self._fishing_pole_loc = configs['fishing_pole_stop']
-            self._fishing_skill_loc = configs['fishing_skill_stop']
-            self._fishing_bauble_loc = configs['fishing_bauble_stop']
-
     # [Load config file into globals]:
     def load_skills_actionbar(self):
         config_filename = 'configs/skills_actionbar.json'
@@ -515,15 +488,12 @@ class bobber_bot():
             self._fishing_bauble_key = configs['fishing_bauble'].get('key')
 
 
-
-# [0]: Add `_use_baubles`, `_use_mouse_mode`, etc to config file.
-# [1]: Check to see if render scale 50% matters -- if so.. is it because of (_RETINA = stage._sp._check_screen())? if so.. add code && remove warning from README
+# [-]: MERGE CHANGES FROM WINDOWS LAPTOP INTO DEV
+# [-]: Check auto_login after calibrate_login
 # [-]: Check auto_reconnect /w 4 ESCAPES (without logging out) to see if it will recover
+# [-]: Check auto_reconnect calibration for WINDOWS)
 # [0]: Ability to give commands to bot from pyautogui.FailSafeException
 # ^ (Ability to recalibrate (scanarea, bobber, tooltip, health) during loop)
-# ^ (Ability to turn on/off _use_mouse_mode, _use_baubles, etc)
-# [0]: Reimplement parts of code using pynput.mouse to allow bot to click to non-active windows.. Also more immediate EMERGENCY_MOUSE_PANIC hook
-# ^ (let bot alt-tab?.. Reimplement parts of code using pynput.keyboard)
 bb = bobber_bot()
 if __name__ == '__main__':
     _DEV = False
@@ -531,7 +501,8 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
-        print('[Woomy! Server Maint~ Time to go play some Splatoon]')
-        bb.delay_start(3600) # 1hr:3600|2hr:7200
+        #bb.calibration_check_optional()
+        #reconnected = bb.auto_reconnect()
+        #print(reconnected)
 
 print('[fin.]')
