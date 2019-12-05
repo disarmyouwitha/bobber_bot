@@ -132,3 +132,7 @@ The one tricky part is setting up the sound.. `audio_callback()` is using the sp
 > https://www.warcrafttavern.com/addons/dlms-dynamic-loot-management-system/
 
 > I use this, rather than autosell, to blacklist trash fish that would otherwise fill up my inventory.
+
+# [LICENSE]:
+> MIT License (open source) have fun / feel free to fork && submit Pull Requests with improvements! 
+> https://choosealicense.com/licenses/mit/
