@@ -85,44 +85,20 @@ The one tricky part is setting up the sound.. `audio_callback()` is using the sp
 
 # [INSTALLING NOTES]:
 
-# [OSX]:
+## [OSX]:
 > brew install python3
 
 > brew install portaudio
 
-> python -m pip install pyaudio
-
 > install Soundflower-2.0b2.dmg from install_files (OR..)
 > https://github.com/mattingalls/Soundflower/releases/download/2.0b2/Soundflower-2.0b2.dmg
 
-# [WINDOWS]:
+## [WINDOWS]:
 > install `python-3.7.5-amd64-webinstall.exe` from install_files
 
-> install `PyAudio-0.2.11.win-amd64-py3.7.msi` from install_files
+## [BOTH NEED]:
+> pip install -r /requirements.txt
 
-> python -m pip install `pyHook-1.5.1-cp37-cp37m-win_amd64.whl` from install_files
-
-> python -m pip install mss
-
-
-# [BOTH NEED]:
-> python -m pip install numpy
-
-> python -m pip install imageio
-
-> python -m pip install playsound
-
-> python -m pip install pyautogui
-
-> python -m pip install PyUserInput
-
-> python -m pip install scikit-image
-
-> python -m pip install opencv-python
-
->
-
->
 
 # [HIGHLY RECOMMENDED]:
 > DLMS took care of most of my inventory problems.. I just add trashfish to my blacklist:
