@@ -31,7 +31,7 @@ def audio_callback(in_data, frame_count, time_info, status):
 
         # [Waits for bot to start before listening for audio]:
         if bb._timer_start is not None:
-            
+
             peak = numpy.average(numpy.abs(data))*2
             peak = int(peak)
 
@@ -231,7 +231,7 @@ class bobber_bot():
     # [Try to clear disconnect messages and reconnect]:
     # [Try to reconnect an even number of times, so that it will auto-recover if you did not actually D/C]:
     def auto_reconnect(self):
-        for x in range(0,4): 
+        for x in range(0,4):
             _reconnected = self.reconnect()
             if _reconnected==1 or _reconnected==-1:
                 #self._miss_cnt = 0
