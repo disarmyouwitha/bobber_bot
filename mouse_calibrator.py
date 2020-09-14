@@ -15,15 +15,17 @@ class mouse_calibrator(PyMouseEvent):
     _coords_stop = None
     _coords_start = None
     _yield_skills = None
+    _first_click = None
 
     def __init__(self, state=None):
         PyMouseEvent.__init__(self)
         self._sp = screen_pixel.screen_pixel()
         self._state = state
+        self._first_click = True
 
         # [Trying to account for differences in OSX/Windows]:
         if sys.platform == 'darwin':
-            self._y_offset = -80 #-75 ???
+            self._y_offset = 0#-40 #-80 #-75 ???
         else:
             self._y_offset = -30
 
@@ -32,24 +34,12 @@ class mouse_calibrator(PyMouseEvent):
             self._yield_skills = self.yield_actionbar_skills()
 
         elif state == 'scanarea' or state == 'health' or state == 'login':
-            print('[Calibrating {0}: Click at the top-left of the area, && drag to lower-right and release click.]'.format(state))
-            self._sp.capture()
-            self._nemo = self._sp._numpy
-
-            # [Windows might need this at 50% in WoW too?]:
-            if sys.platform == 'darwin':
-                self._nemo = self._sp.resize_image(self._nemo, scale_percent=50)
-
-            cv2.imshow('Calibrate {0}'.format(state), self._nemo)
-            cv2.moveWindow('Calibrate {0}'.format(state), 0,0)
+            print('[Calibrating {0}: Click at the top-left of the area, then click on the lower-right area you want to scan.]'.format(state))
+            #self._sp.capture() #?
+            #self._nemo = self._sp._numpy #
         elif state == 'tooltip':
-            print('Click at the top-left of the tooltip, && drag to lower-right and release.]')
-
-            self._sp.capture() #Capture so we can get width/height, pass in the numpy array:
-            self._nemo = self._sp.grab_rect({"x": int(self._sp._width/2), "y": int(self._sp._height/2)}, {"x": int(self._sp._width), "y": int(self._sp._height)}, mod=1, nemo=self._sp._numpy)
-
-            cv2.imshow('Calibrate Tooltip', self._nemo)
-            cv2.moveWindow('Calibrate Tooltip', 0,0)
+            print('Click at the top-left of the tooltip, then again on the lower-right of the tooltip.]')
+            #self._sp.capture() #?
         else:
             print('[mouse_calibrator started without state]')
             sys.exit(1)
@@ -89,10 +79,6 @@ class mouse_calibrator(PyMouseEvent):
             gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
             imageio.imwrite('configs/{0}_control_gray.png'.format(config_name), gray_nemo)
 
-        # [Tooltip calibration starts from lower right half of screen]:
-        if 'tooltip' in config_name:
-            (_coords_start, _coords_stop) = self.offset_configs(_coords_start, _coords_stop, config_name)
-
         # [Update config for locations]:
         configs.update(_coords_start)
         configs.update(_coords_stop)
@@ -129,13 +115,14 @@ class mouse_calibrator(PyMouseEvent):
         if button==1 and self._state!='mouse_actionbar':
             print('Woomy!: ({0}, {1})'.format(int_x, int_y))
 
-            if press:
+            #if press:
+            if self._first_click and press:
                 self._coords_start = {"{0}_start".format(self._state) : { "x":int_x, "y":int_y }}
-            else:
+                self._first_click = False
+            elif press:
                 self._coords_stop = {"{0}_stop".format(self._state) : { "x":int_x, "y":int_y }}
 
             # [Save bounds of box]:
             if self._coords_stop is not None:
                 self.save_box_coords(self._coords_start, self._coords_stop, self._state)
-                cv2.destroyAllWindows()
                 self.stop()

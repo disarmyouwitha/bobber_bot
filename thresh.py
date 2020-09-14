@@ -411,7 +411,7 @@ class bobber_bot():
             if _config_set:
                 # [Preview if scanarea]:
                 if 'scanarea' in config_name:
-                    self.sp.draw_rect(configs['scanarea_start'], configs['scanarea_stop'], mod=1, pause=False)
+                    self.sp.draw_rect(configs['scanarea_start'], configs['scanarea_stop'], mod=1, pause=False) # mod 2 because 50% resolution scale?
 
                 _use_calibrate_config = input('[Calibration config found for {0} | Use this?]: '.format(config_name))
                 _use_calibrate_config = False if (_use_calibrate_config.lower() == 'n' or _use_calibrate_config.lower() == 'no') else True
@@ -441,13 +441,13 @@ class bobber_bot():
             self.sp._scanarea_start = configs['scanarea_start']
             self.sp._scanarea_stop = configs['scanarea_stop']
             if _use_calibrate_config == False:
-                self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1)
+                self.sp.draw_rect(self.sp._scanarea_start, self.sp._scanarea_stop, mod=1) #mod=2
         elif 'tooltip' in config_name:
             self.sp._tooltip_start = configs['tooltip_start']
             self.sp._tooltip_stop = configs['tooltip_stop']
             if _use_calibrate_config == False:
                 if sys.platform == 'darwin':
-                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=.5)
+                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
                 else:
                     self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
         elif 'health' in config_name or 'login' in config_name:
@@ -501,6 +501,8 @@ if __name__ == '__main__':
         bb.start()
     else:
         print('[_DEV testing]:')
+        #bb.calibration_check_required()
+        bb.config_check('tooltip')
         #bb.calibration_check_optional()
         #reconnected = bb.auto_reconnect()
         #print(reconnected)
