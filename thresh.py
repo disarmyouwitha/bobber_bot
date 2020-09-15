@@ -94,12 +94,12 @@ class bobber_bot():
 
     # [I've been keeping threshold lower on my windows box because I actually have to listen to it(?)ss]:
     if sys.platform == 'darwin':
-        _audio_threshold = 1400
+        _audio_threshold = 2000 #1400
     else:
         _audio_threshold = 200
 
     # [BobberBot Settings]:
-    _use_baubles = 0 # 60
+    _use_baubles = 60
     _use_mouse_mode = False # Uses only mouse calls, so you can chat/use the keyboard while it's running.
 
     def __init__(self):
@@ -171,12 +171,11 @@ class bobber_bot():
                 nemo = self.sp.grab_rect(configs[config_name+'_start'], configs[config_name+'_stop'], mod=2)
                 nemo = self.sp.resize_image(nemo, scale_percent=50)
             else: # tooltip:
-                nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
+                nemo = self.sp.grab_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=2)
 
             # [Convert images to grayscale]:
             gray_test = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
             gray_control = imageio.imread('configs/{0}_control_gray.png'.format(config_name))
-            imageio.imwrite('test_{0}_gray.png'.format(config_name), gray_test) #remove?#
 
             (score, diff) = skimage.metrics.structural_similarity(gray_control, gray_test, full=True)
 
@@ -446,9 +445,9 @@ class bobber_bot():
             self.sp._tooltip_start = configs['tooltip_start']
             self.sp._tooltip_stop = configs['tooltip_stop']
             if _use_calibrate_config == False:
-                if sys.platform == 'darwin':
-                    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
-                else:
+                #if sys.platform == 'darwin':
+                #    self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
+                #else:
                     self.sp.draw_rect(self.sp._tooltip_start, self.sp._tooltip_stop, mod=1)
         elif 'health' in config_name or 'login' in config_name:
             if _use_calibrate_config == False:

@@ -35,11 +35,10 @@ class mouse_calibrator(PyMouseEvent):
 
         elif state == 'scanarea' or state == 'health' or state == 'login':
             print('[Calibrating {0}: Click at the top-left of the area, then click on the lower-right area you want to scan.]'.format(state))
-            #self._sp.capture() #?
-            #self._nemo = self._sp._numpy #
         elif state == 'tooltip':
+            self._sp.capture()
+            self._nemo = self._sp._numpy
             print('Click at the top-left of the tooltip, then again on the lower-right of the tooltip.]')
-            #self._sp.capture() #?
         else:
             print('[mouse_calibrator started without state]')
             sys.exit(1)
@@ -75,9 +74,10 @@ class mouse_calibrator(PyMouseEvent):
 
         # [Screenshot for `_control_gray.png`]:
         if 'tooltip' in config_name or 'health' in config_name or 'login' in config_name:
-            nemo = self._sp.grab_rect(_coords_start[config_name+'_start'], _coords_stop[config_name+'_stop'], mod=1, nemo=self._nemo)
+            nemo = self._sp.grab_rect(_coords_start[config_name+'_start'], _coords_stop[config_name+'_stop'], mod=2, nemo=self._nemo)
             gray_nemo = cv2.cvtColor(nemo, cv2.COLOR_BGR2GRAY)
             imageio.imwrite('configs/{0}_control_gray.png'.format(config_name), gray_nemo)
+            
 
         # [Update config for locations]:
         configs.update(_coords_start)
