@@ -1,4 +1,4 @@
-numpy==1.18.1
+numpy==1.22.0
 pyaudio==0.2.11 ; sys_platform == 'darwin'
 imageio==2.8.0
 playsound==1.2.2
