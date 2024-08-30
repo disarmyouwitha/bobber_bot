@@ -6,7 +6,7 @@ PyAutoGUI==0.9.48
 PyUserInput==0.1.11
 scikit-image==0.16.2
 opencv-python-headless==4.2.0.32 ; sys_platform == 'darwin'
-opencv-python==4.2.0.32 ; sys_platform == 'win32'
+opencv-python==4.8.1.78 ; sys_platform == 'win32'
 https://download.lfd.uci.edu/pythonlibs/s2jqpv5t/pyHook-1.5.1-cp37-cp37m-win_amd64.whl ; sys_platform == 'win32'
 mss==5.0.0 ; sys_platform == 'win32'
 https://github.com/intxcc/pyaudio_portaudio/releases/download/1.1.1/PyAudio-0.2.11-cp37-cp37m-win_amd64.whl ; sys_platform == 'win32'
